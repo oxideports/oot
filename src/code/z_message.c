@@ -2648,6 +2648,7 @@ void Message_OpenText(PlayState* play, u16 textId) {
             DMA_REQUEST_SYNC(MSG_BUF, (uintptr_t)_jpn_message_data_staticSegmentRomStart + font->msgOffset,
                              font->msgLength, "../z_message_PAL.c", UNK_LINE);
 #endif
+            FONT_WIDE_TO_HOST(MSG_BUF_WIDE, font->msgLength);
         } else {
             Message_FindMessageNES(play, textId);
             msgCtx->msgLength = font->msgLength;

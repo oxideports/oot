@@ -1565,6 +1565,7 @@ s32 CutsceneCmd_UpdateCamEyeSpline(PlayState* play, CutsceneContext* csCtx, u8* 
     s32 shouldContinue = true;
     CsCmdCam* cmd = (CsCmdCam*)script;
     s32 size;
+    s32 guard = 0;
 
     script += sizeof(CsCmdCam);
     size = sizeof(CsCmdCam);
@@ -1596,6 +1597,9 @@ s32 CutsceneCmd_UpdateCamEyeSpline(PlayState* play, CutsceneContext* csCtx, u8* 
 
         script += sizeof(CutsceneCameraPoint);
         size += sizeof(CutsceneCameraPoint);
+        if (++guard > 512) {
+            break;
+        }
     }
 
     return size;
@@ -1605,6 +1609,7 @@ s32 CutsceneCmd_UpdateCamAtSpline(PlayState* play, CutsceneContext* csCtx, u8* s
     s32 shouldContinue = true;
     CsCmdCam* cmd = (CsCmdCam*)script;
     s32 size;
+    s32 guard = 0;
 
     script += sizeof(CsCmdCam);
     size = sizeof(CsCmdCam);
@@ -1635,6 +1640,9 @@ s32 CutsceneCmd_UpdateCamAtSpline(PlayState* play, CutsceneContext* csCtx, u8* s
 
         script += sizeof(CutsceneCameraPoint);
         size += sizeof(CutsceneCameraPoint);
+        if (++guard > 512) {
+            break;
+        }
     }
 
     return size;
@@ -1813,11 +1821,11 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
 
 void Cutscene_ProcessScript(PlayState* play, CutsceneContext* csCtx, u8* script) {
     s16 i;
-    s32 totalEntries;
-    s32 cmdType;
-    s32 cmdEntries;
+    int totalEntries;
+    int cmdType;
+    int cmdEntries;
     void* cmd;
-    s32 csFrameCount;
+    int csFrameCount;
     s16 j;
 
     MemCpy(&totalEntries, script, sizeof(totalEntries));
@@ -2231,11 +2239,16 @@ void Cutscene_ProcessScript(PlayState* play, CutsceneContext* csCtx, u8* script)
                 break;
 
             default:
-                MemCpy(&cmdEntries, script, 4);
+                // Unimplemented commands (CS_CMD_UNIMPLEMENTED_B/_D) — skip their entries. On this native
+                // build CutsceneData is 8 bytes (s32 = long), so the entry count is a full 8-byte word and
+                // each entry spans 12 words (0x60), not the N64 hardcodes of 4 bytes / 0x30. Reading only
+                // 4 bytes left the high half of `cmdEntries` as stack garbage, which spun the s16 `j` loop
+                // forever; the 0x30 stride also drifted `script` so the next command decoded as garbage.
+                MemCpy(&cmdEntries, script, sizeof(cmdEntries));
                 script += sizeof(cmdEntries);
 
                 for (j = 0; j < cmdEntries; j++) {
-                    script += 0x30;
+                    script += 12 * sizeof(CutsceneData);
                 }
                 break;
         }

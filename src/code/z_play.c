@@ -308,7 +308,12 @@ void Play_Init(GameState* thisx) {
     SystemArena_Display();
 #endif
 
+#ifdef NO_SEGMENTED_MEMORY
+    // Room for the doubled object space and the larger native scene/room files (z_scene.c).
+    GameState_Realloc(&this->state, 0x1D4790 * 2);
+#else
     GameState_Realloc(&this->state, 0x1D4790);
+#endif
 
 #if PLATFORM_N64
     if ((B_80121220 != NULL) && (B_80121220->unk_10 != NULL)) {

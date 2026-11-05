@@ -7,12 +7,14 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #define NORETURN __attribute__((noreturn))
 
+#include "../n64texconv/src/libn64texconv/bin2c.h"
 #include "../n64texconv/src/libn64texconv/jfif.h"
 
 static bool is_regular_file(const char* path) {
@@ -34,6 +36,11 @@ int main(int argc, char** argv) {
     const char* in;
     const char* out;
 
+    if (argc > 1 && strcmp(argv[1], "--little-endian") == 0) {
+        bin2c_set_little_endian(true);
+        argv++;
+        argc--;
+    }
     if (argc != 3)
         usage(progname);
 

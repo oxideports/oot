@@ -6,7 +6,7 @@
 extern u16 LEOrw_flags; // N.B. NOT volatile in this file!
 
 void leoWrite(void) {
-    u32 message;
+    OSMesg message;
     u32 start_lba;
     u32 xfer_blk;
     u32 write_bytes = 0;
@@ -41,10 +41,10 @@ void leoWrite(void) {
     LEOrw_flags = 0x8000;
     LEOtgt_param.lba = start_lba;
     osStartThread(&LEOinterruptThread);
-    osRecvMesg(&LEOcontrol_que, (OSMesg*)&message, OS_MESG_BLOCK);
+    osRecvMesg(&LEOcontrol_que, &message, OS_MESG_BLOCK);
 
-    if (message != 0x90000) {
-        LEOcur_command->header.sense = message;
+    if ((uintptr_t)message != 0x90000) {
+        LEOcur_command->header.sense = (uintptr_t)message;
         LEOcur_command->header.status = LEO_STATUS_CHECK_CONDITION;
         return;
     }

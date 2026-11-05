@@ -6619,7 +6619,7 @@ s32 Camera_Demo5(Camera* camera) {
 
     framesDiff = sDemo5PrevSfxFrame - camera->play->state.frames;
     if ((framesDiff > 50) || (framesDiff < -50)) {
-        Sfx_PlaySfxCentered((u32)camera->data1);
+        Sfx_PlaySfxCentered((uintptr_t)camera->data1);
     }
 
     sDemo5PrevSfxFrame = camera->play->state.frames;

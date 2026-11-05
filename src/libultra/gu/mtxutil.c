@@ -3,10 +3,12 @@
 void guMtxF2L(f32 mf[4][4], Mtx* m) {
     s32 i, j;
     s32 e1, e2;
-    s32 *ai, *af;
+    // Mtx words are fixed 32-bit (Mtx_t is `int[4][4]`); step with `int*` so on LP64 the pointer
+    // strides 4 bytes, not `s32`(=long)=8 — otherwise the 8 int + 8 frac words overrun/misalign.
+    int *ai, *af;
 
-    ai = (s32*)&m->m[0][0];
-    af = (s32*)&m->m[2][0];
+    ai = (int*)&m->m[0][0];
+    af = (int*)&m->m[2][0];
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 2; j++) {
@@ -21,11 +23,12 @@ void guMtxF2L(f32 mf[4][4], Mtx* m) {
 void guMtxL2F(f32 mf[4][4], Mtx* m) {
     s32 i, j;
     u32 e1, e2;
-    u32 *ai, *af;
+    // Fixed 32-bit Mtx words — step with `unsigned int*` (4 bytes on LP64), not `u32`(=long)=8.
+    unsigned int *ai, *af;
     s32 q1, q2;
 
-    ai = (u32*)&m->m[0][0];
-    af = (u32*)&m->m[2][0];
+    ai = (unsigned int*)&m->m[0][0];
+    af = (unsigned int*)&m->m[2][0];
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 2; j++) {

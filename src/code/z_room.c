@@ -11,6 +11,7 @@
 #if PLATFORM_N64
 #include "n64dd.h"
 #endif
+#include "platform_info.h"
 #include "printf.h"
 #include "regs.h"
 #include "segmented_address.h"
@@ -286,7 +287,11 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
 s32 Room_DecodeJpeg(void* data) {
     OSTime time;
 
+#if IS_BIG_ENDIAN
     if (*(u32*)data == JPEG_MARKER) {
+#else
+    if (__builtin_bswap32(*(u32*)data) == JPEG_MARKER) {
+#endif
         PRINTF(T("JPEGデータを展開します\n", "Expanding jpeg data\n"));
         PRINTF(T("JPEGデータアドレス %08x\n", "Jpeg data address %08x\n"), data);
         PRINTF(T("ワークバッファアドレス（Ｚバッファ）%08x\n", "Work buffer address (Z buffer) %08x\n"), gZBuffer);

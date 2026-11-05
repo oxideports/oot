@@ -56,6 +56,16 @@ void Font_LoadMessageBoxIcon(Font* font, u16 icon) {
  * Loads a full set of character textures based on their ordering in the message with text id 0xFFFC into
  * the font buffer.
  */
+#if !IS_BIG_ENDIAN
+void Font_SwapWideText(u16* buf, s32 size) {
+    s32 i;
+
+    for (i = 0; i < size / 2; i++) {
+        buf[i] = (u16)((buf[i] >> 8) | (buf[i] << 8));
+    }
+}
+#endif
+
 void Font_LoadOrderedFont(Font* font) {
     s32 size;
     s32 len;
@@ -72,6 +82,7 @@ void Font_LoadOrderedFont(Font* font) {
     len = (u32)size / 2;
     DMA_REQUEST_SYNC(font->msgBufWide, (uintptr_t)_jpn_message_data_staticSegmentRomStart + font->msgOffset, size,
                      "../z_kanfont.c", UNK_LINE);
+    FONT_WIDE_TO_HOST(font->msgBufWide, size);
 
     PRINTF("msg_data=%x,  msg_data0=%x   jj=%x\n", font->msgOffset, font->msgLength, len);
 

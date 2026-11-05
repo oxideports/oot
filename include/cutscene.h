@@ -4,10 +4,16 @@
 #include "ultra64.h"
 #include "z_math.h"
 
+typedef struct {
+    int x;
+    int y;
+    int z;
+} CsCmdVec3; // 4-byte wire-format cutscene position
+
 struct PlayState;
 
 typedef union CutsceneData {
-    s32 i;
+    int i;
     f32 f;
     s16 s[2];
     s8  b[4];
@@ -350,7 +356,7 @@ typedef union CsCmdCam {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame;
     };
-    s32 _words[2];
+    int _words[2];
 } CsCmdCam; // size = 0x8
 
 typedef union CsCmdMisc {
@@ -359,7 +365,7 @@ typedef union CsCmdMisc {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame;
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdMisc; // size = 0x30
 
 typedef union CsCmdLightSetting {
@@ -369,7 +375,7 @@ typedef union CsCmdLightSetting {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame; // unused
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdLightSetting; // size = 0x30
 
 typedef union CsCmdStartSeq {
@@ -379,7 +385,7 @@ typedef union CsCmdStartSeq {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame; // unused
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdStartSeq; // size = 0x30
 
 typedef union CsCmdStopSeq {
@@ -389,7 +395,7 @@ typedef union CsCmdStopSeq {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame; // unused
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdStopSeq; // size = 0x30
 
 typedef union CsCmdFadeOutSeq {
@@ -398,7 +404,7 @@ typedef union CsCmdFadeOutSeq {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame;
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdFadeOutSeq; // size = 0x30
 
 typedef union CsCmdRumble {
@@ -410,7 +416,7 @@ typedef union CsCmdRumble {
         /* 0x07 */ u8 duration;
         /* 0x08 */ u8 decreaseRate;
     };
-    s32 _words[3];
+    int _words[3];
 } CsCmdRumble; // size = 0xC
 
 typedef union CsCmdTime {
@@ -421,7 +427,7 @@ typedef union CsCmdTime {
         /* 0x06 */ u8  hour;
         /* 0x07 */ u8  minute;
     };
-    s32 _words[3];
+    int _words[3];
 } CsCmdTime; // size = 0xC
 
 typedef union CsCmdDestination {
@@ -430,7 +436,7 @@ typedef union CsCmdDestination {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame; // unused
     };
-    s32 _words[2];
+    int _words[2];
 } CsCmdDestination; // size = 0x8
 
 typedef union CsCmdText {
@@ -442,7 +448,7 @@ typedef union CsCmdText {
         /* 0x08 */ u16 altTextId1;
         /* 0x0A */ u16 altTextId2;
     };
-    s32 _words[3];
+    int _words[3];
 } CsCmdText; // size = 0xC
 
 #define CS_TEXT_ID_NONE 0xFFFF
@@ -453,7 +459,7 @@ typedef union CsCmdTransition {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame;
     };
-    s32 _words[2];
+    int _words[2];
 } CsCmdTransition; // size = 0x8
 
 typedef union CsCmdActorCue {
@@ -462,10 +468,10 @@ typedef union CsCmdActorCue {
         /* 0x02 */ u16 startFrame;
         /* 0x04 */ u16 endFrame;
         /* 0x06 */ Vec3us rot;
-        /* 0x0C */ Vec3i startPos;
-        /* 0x18 */ Vec3i endPos;
+        /* 0x0C */ CsCmdVec3 startPos;
+        /* 0x18 */ CsCmdVec3 endPos;
     };
-    s32 _words[12];
+    int _words[12];
 } CsCmdActorCue; // size = 0x30
 
 typedef union CutsceneCameraPoint {
@@ -476,7 +482,7 @@ typedef union CutsceneCameraPoint {
         /* 0x04 */ f32 viewAngle; // in degrees
         /* 0x08 */ Vec3s pos;
     };
-    s32 _words[4];
+    int _words[4];
 } CutsceneCameraPoint; // size = 0x10
 
 #define CS_CAM_CONTINUE 0
@@ -530,5 +536,24 @@ void Cutscene_UpdateScripted(struct PlayState* play, CutsceneContext* csCtx);
 void Cutscene_HandleEntranceTriggers(struct PlayState* play);
 void Cutscene_HandleConditionalTriggers(struct PlayState* play);
 void Cutscene_SetScript(struct PlayState* play, void* script);
+
+_Static_assert(sizeof(CutsceneData) == 4, "CutsceneData must be 4 bytes");
+_Static_assert(sizeof(CsCmdCam) == 0x8, "CsCmdCam 0x8");
+_Static_assert(sizeof(CsCmdMisc) == 0x30, "CsCmdMisc 0x30");
+_Static_assert(sizeof(CsCmdLightSetting) == 0x30, "CsCmdLightSetting 0x30");
+_Static_assert(sizeof(CsCmdStartSeq) == 0x30, "CsCmdStartSeq 0x30");
+_Static_assert(sizeof(CsCmdStopSeq) == 0x30, "CsCmdStopSeq 0x30");
+_Static_assert(sizeof(CsCmdFadeOutSeq) == 0x30, "CsCmdFadeOutSeq 0x30");
+_Static_assert(sizeof(CsCmdRumble) == 0xC, "CsCmdRumble 0xC");
+_Static_assert(sizeof(CsCmdTime) == 0xC, "CsCmdTime 0xC");
+_Static_assert(sizeof(CsCmdDestination) == 0x8, "CsCmdDestination 0x8");
+_Static_assert(sizeof(CsCmdText) == 0xC, "CsCmdText 0xC");
+_Static_assert(sizeof(CsCmdTransition) == 0x8, "CsCmdTransition 0x8");
+_Static_assert(sizeof(CsCmdActorCue) == 0x30, "CsCmdActorCue 0x30");
+_Static_assert(sizeof(CutsceneCameraPoint) == 0x10, "CutsceneCameraPoint 0x10");
+_Static_assert(__builtin_offsetof(CutsceneCameraPoint, viewAngle) == 0x04, "camPoint.viewAngle @0x04");
+_Static_assert(__builtin_offsetof(CutsceneCameraPoint, pos) == 0x08, "camPoint.pos @0x08");
+_Static_assert(__builtin_offsetof(CsCmdActorCue, startPos) == 0x0C, "cue.startPos @0x0C");
+_Static_assert(__builtin_offsetof(CsCmdActorCue, endPos) == 0x18, "cue.endPos @0x18");
 
 #endif
