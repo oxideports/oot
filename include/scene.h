@@ -9,6 +9,7 @@
 #include "z_math.h"
 #include "path.h"
 
+#include "alignment.h"
 #include "command_macros_base.h"
 
 struct GameState;
@@ -57,7 +58,10 @@ typedef struct Spawn {
 typedef struct SCmdBase {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
-    /* 0x04 */ u32 data2;
+    // uintptr_t (not u32): the scene-command union's word slot. Static asset initializers write
+    // pointers here via CMD_PTR, and the union's typed variants overlay pointer members at the
+    // same (pointer-aligned) offset — so this must be pointer-width on the host. 32-bit on N64.
+    /* 0x04 */ uintptr_t data2;
 } SCmdBase;
 
 typedef struct SCmdPlayerEntryList {
@@ -90,11 +94,13 @@ typedef struct SCmdRoomList {
     /* 0x04 */ RomFile* data;
 } SCmdRoomList;
 
+// Byte-packed commands keep their bytes in SCmdBase's word slot, which is pointer-aligned on a
+// native host; ALIGNED moves the first in-slot byte with it and leaves the N64 offsets unchanged.
 typedef struct SCmdWindSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
     /* 0x02 */ char pad[2];
-    /* 0x04 */ u8  x;
+    /* 0x04 */ u8  x ALIGNED(sizeof(uintptr_t));
     /* 0x05 */ u8  y;
     /* 0x06 */ u8  z;
     /* 0x07 */ u8  unk_07;
@@ -109,13 +115,19 @@ typedef struct SCmdSpawnList {
 typedef struct SCmdSpecialFiles {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  naviQuestHintFileId;
-    /* 0x04 */ u32 keepObjectId;
+    // uintptr_t (not u32): the scene-command union's word slot. Static asset initializers write
+    // pointers here via CMD_PTR, and the union's typed variants overlay pointer members at the
+    // same (pointer-aligned) offset — so this must be pointer-width on the host. 32-bit on N64.
+    /* 0x04 */ uintptr_t keepObjectId;
 } SCmdSpecialFiles;
 
 typedef struct SCmdRoomBehavior {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  gpFlag1;
-    /* 0x04 */ u32 gpFlag2;
+    // uintptr_t (not u32): the scene-command union's word slot. Static asset initializers write
+    // pointers here via CMD_PTR, and the union's typed variants overlay pointer members at the
+    // same (pointer-aligned) offset — so this must be pointer-width on the host. 32-bit on N64.
+    /* 0x04 */ uintptr_t gpFlag2;
 } SCmdRoomBehavior;
 
 typedef struct SCmdMesh {
@@ -158,7 +170,7 @@ typedef struct SCmdTimeSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
     /* 0x02 */ char pad[2];
-    /* 0x04 */ u8  hour;
+    /* 0x04 */ u8  hour ALIGNED(sizeof(uintptr_t));
     /* 0x05 */ u8  min;
     /* 0x06 */ u8  timeSpeed;
 } SCmdTimeSettings;
@@ -167,7 +179,7 @@ typedef struct SCmdSkyboxSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
     /* 0x02 */ char pad[2];
-    /* 0x04 */ u8  skyboxId;
+    /* 0x04 */ u8  skyboxId ALIGNED(sizeof(uintptr_t));
     /* 0x05 */ u8  skyboxConfig;
     /* 0x06 */ u8  envLightMode;
 } SCmdSkyboxSettings;
@@ -176,14 +188,17 @@ typedef struct SCmdSkyboxDisables {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
     /* 0x02 */ char pad[2];
-    /* 0x04 */ u8  skyboxDisabled;
+    /* 0x04 */ u8  skyboxDisabled ALIGNED(sizeof(uintptr_t));
     /* 0x05 */ u8  sunMoonDisabled;
 } SCmdSkyboxDisables;
 
 typedef struct SCmdEndMarker {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
-    /* 0x04 */ u32 data2;
+    // uintptr_t (not u32): the scene-command union's word slot. Static asset initializers write
+    // pointers here via CMD_PTR, and the union's typed variants overlay pointer members at the
+    // same (pointer-aligned) offset — so this must be pointer-width on the host. 32-bit on N64.
+    /* 0x04 */ uintptr_t data2;
 } SCmdEndMarker;
 
 typedef struct SCmdExitList {
@@ -195,7 +210,8 @@ typedef struct SCmdExitList {
 typedef struct SCmdSoundSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  specId;
-    /* 0x02 */ char pad[4];
+    /* 0x02 */ char pad[2];
+    /* 0x04 */ char pad2[2] ALIGNED(sizeof(uintptr_t));
     /* 0x06 */ u8  natureAmbienceId;
     /* 0x07 */ u8  seqId;
 } SCmdSoundSettings;
@@ -203,7 +219,8 @@ typedef struct SCmdSoundSettings {
 typedef struct SCmdEchoSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  data1;
-    /* 0x02 */ char pad[5];
+    /* 0x02 */ char pad[2];
+    /* 0x04 */ char pad2[3] ALIGNED(sizeof(uintptr_t));
     /* 0x07 */ u8  echo;
 } SCmdEchoSettings;
 
@@ -222,7 +239,10 @@ typedef struct SCmdAltHeaders {
 typedef struct SCmdMiscSettings {
     /* 0x00 */ u8  code;
     /* 0x01 */ u8  sceneCamType;
-    /* 0x04 */ u32 area;
+    // uintptr_t (not u32): the scene-command union's word slot. Static asset initializers write
+    // pointers here via CMD_PTR, and the union's typed variants overlay pointer members at the
+    // same (pointer-aligned) offset — so this must be pointer-width on the host. 32-bit on N64.
+    /* 0x04 */ uintptr_t area;
 } SCmdMiscSettings;
 
 typedef union SceneCmd {

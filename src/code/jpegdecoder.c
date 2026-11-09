@@ -188,7 +188,11 @@ u16 JpegDecoder_ReadBits(u8 len) {
 
     ret = sJpegBitStreamCurWord << sJpegBitStreamBitIdx;
     temp = ret;
+#ifdef AVOID_UB
+    ret = temp >> (32 - len);
+#else
     ret = temp >> -len;
+#endif
     sJpegBitStreamBitIdx += len;
     return ret;
 }

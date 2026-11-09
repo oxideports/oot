@@ -1,4 +1,5 @@
 #include "ultra64.h"
+#include "platform_info.h"
 #include "libu64/debug.h"
 #include "libu64/mtxuty-cvt.h"
 
@@ -8,6 +9,12 @@ void MtxConv_F2L(Mtx* m1, MtxF* m2) {
 
     LOG_UTILS_CHECK_NULL_POINTER("m1", m1, "../mtxuty-cvt.c", 31);
     LOG_UTILS_CHECK_NULL_POINTER("m2", m2, "../mtxuty-cvt.c", 32);
+
+#if !IS_BIG_ENDIAN
+    // intPart/fracPart index big-endian halves of each Mtx word.
+    guMtxF2L(m2->mf, m1);
+    return;
+#endif
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {

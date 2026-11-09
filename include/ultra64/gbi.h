@@ -4,6 +4,7 @@
 
 #include "mbi.h"
 #include "ultratypes.h"
+#include <stdint.h> // reality64 port-layer: uintptr_t for the widened Gfx words (below)
 
 #ifdef GBI_DOWHILE
 /* Private macro to wrap other macros in do {...} while (0) */
@@ -1071,7 +1072,12 @@ typedef struct Tri {
  * First 8 words are integer portion of the 4x4 matrix
  * Last 8 words are the fraction portion of the 4x4 matrix
  */
-typedef long int Mtx_t[4][4];
+// N64 `long int` is 32-bit (ILP32), making the RSP-facing fixed-point Mtx exactly 64 bytes (16 words:
+// 8 integer-part + 8 fraction-part). On an LP64 host `long int` is 64-bit, which would double Mtx to
+// 128 bytes and push the fraction half (addressed as `&m[2][0]`) to byte 64 instead of 32 — so every
+// guMtxF2L/Matrix_MtxFToMtx write lands its fractions where the RSP/fast3d never reads them (garbled
+// matrices; see also the OSTask/OSIoMesg ABI-width fixes). Pin the element to a fixed 32-bit `int`.
+typedef int Mtx_t[4][4];
 typedef union Mtx {
     Mtx_t   m;
     struct {
@@ -1991,8 +1997,11 @@ typedef Gdma Gvtx;
  * Generic Gfx Packet
  */
 typedef struct Gwords {
-    unsigned int w0;
-    unsigned int w1;
+    /* reality64 port-layer: native-width words so display-list commands can hold real 64-bit
+     * pointers (untruncated) and static Gfx initializers stay compile-time constant. Matches
+     * the widened Gfx SM64 already uses on a 64-bit host. */
+    uintptr_t w0;
+    uintptr_t w1;
 } Gwords;
 
 /*
@@ -2049,14 +2058,14 @@ _DW({                                       \
                                             \
     _g->words.w0 = (_SHIFTL((c), 24,  8) |  \
                     _SHIFTL((l),  0, 24));  \
-    _g->words.w1 = (unsigned int)(s);       \
+    _g->words.w1 = (uintptr_t)(s);       \
 })
 
 #define gsDma0p(c, s, l)    \
 {                           \
    (_SHIFTL((c), 24,  8) |  \
     _SHIFTL((l),  0, 24)),  \
-    (unsigned int)(s)       \
+    (uintptr_t)(s)       \
 }
 
 #define gDma1p(pkt, c, s, l, p)             \
@@ -2066,7 +2075,7 @@ _DW({                                       \
     _g->words.w0 = (_SHIFTL((c), 24,  8) |  \
                     _SHIFTL((p), 16,  8) |  \
                     _SHIFTL((l),  0, 16));  \
-    _g->words.w1 = (unsigned int)(s);       \
+    _g->words.w1 = (uintptr_t)(s);       \
 })
 
 #define gsDma1p(c, s, l, p) \
@@ -2074,7 +2083,7 @@ _DW({                                       \
    (_SHIFTL((c), 24,  8) |  \
     _SHIFTL((p), 16,  8) |  \
     _SHIFTL((l),  0, 16)),  \
-    (unsigned int)(s)       \
+    (uintptr_t)(s)       \
 }
 
 #define gDma2p(pkt, c, adrs, len, idx, ofs)             \
@@ -2085,7 +2094,7 @@ _DW({                                                   \
                     _SHIFTL(((len) - 1) / 8, 19, 5) |   \
                     _SHIFTL((ofs) / 8,        8, 8) |   \
                     _SHIFTL((idx),            0, 8));   \
-    _g->words.w1 = (unsigned int)(adrs);                \
+    _g->words.w1 = (uintptr_t)(adrs);                \
 })
 
 #define gsDma2p(c, adrs, len, idx, ofs) \
@@ -2094,7 +2103,7 @@ _DW({                                                   \
     _SHIFTL(((len) - 1) / 8, 19, 5) |   \
     _SHIFTL((ofs) / 8,        8, 8) |   \
     _SHIFTL((idx),            0, 8)),   \
-    (unsigned int)(adrs)                \
+    (uintptr_t)(adrs)                \
 }
 
 #define gSPNoOp(pkt)    gDma0p(pkt, G_SPNOOP, 0, 0)
@@ -2127,7 +2136,7 @@ _DW({                                               \
     _g->words.w0 = (_SHIFTL(G_VTX,      24, 8) |    \
                     _SHIFTL((n),        12, 8) |    \
                     _SHIFTL((v0) + (n),  1, 7));    \
-    _g->words.w1 = (unsigned int)(v);               \
+    _g->words.w1 = (uintptr_t)(v);               \
 })
 
 # define    gsSPVertex(v, n, v0)    \
@@ -2135,7 +2144,7 @@ _DW({                                               \
    (_SHIFTL(G_VTX,      24, 8) |    \
     _SHIFTL((n),        12, 8) |    \
     _SHIFTL((v0) + (n),  1, 7)),    \
-    (unsigned int)(v)               \
+    (uintptr_t)(v)               \
 }
 #elif   (defined(F3DEX_GBI) || defined(F3DLP_GBI))
 /*
@@ -2200,13 +2209,13 @@ _DW({                                   \
     Gfx *_g = (Gfx *)(pkt);             \
                                         \
     _g->words.w0 = _SHIFTL((c), 24, 8); \
-    _g->words.w1 = (unsigned int)(p0);  \
+    _g->words.w1 = (uintptr_t)(p0);  \
 })
 
 #define gsImmp1(c, p0)      \
 {                           \
     _SHIFTL((c), 24, 8),    \
-    (unsigned int)(p0)      \
+    (uintptr_t)(p0)      \
 }
 
 #define gImmp2(pkt, c, p0, p1)              \
@@ -2250,7 +2259,7 @@ _DW({                                       \
     _g->words.w0 = (_SHIFTL((c),  24,  8) | \
                     _SHIFTL((p0),  8, 16) | \
                     _SHIFTL((p1),  0,  8)); \
-    _g->words.w1 = (unsigned int) (dat);    \
+    _g->words.w1 = (uintptr_t) (dat);    \
 })
 
 #define gsImmp21(c, p0, p1, dat)    \
@@ -2258,7 +2267,7 @@ _DW({                                       \
    (_SHIFTL((c),  24,  8) |         \
     _SHIFTL((p0),  8, 16) |         \
     _SHIFTL((p1),  0,  8)),         \
-    (unsigned int) (dat)            \
+    (uintptr_t) (dat)            \
 }
 
 #ifdef  F3DEX_GBI_2
@@ -2562,7 +2571,7 @@ _DW({                                                           \
                                                                 \
     _g->words.w0 = (_SHIFTL(G_CULLDL, 24, 8) |                  \
                     ((0x0F & (vstart)) * 40));                  \
-    _g->words.w1 = (unsigned int)((0x0F & ((vend) + 1)) * 40);  \
+    _g->words.w1 = (uintptr_t)((0x0F & ((vend) + 1)) * 40);  \
 })
 
 #define gsSPCullDisplayList(vstart,vend)    \
@@ -2674,14 +2683,14 @@ _DW({                                               \
     _g->words.w0 = (_SHIFTL(G_MODIFYVTX, 24,  8) |  \
                     _SHIFTL((where),     16,  8) |  \
                     _SHIFTL((vtx) * 2,    0, 16));  \
-    _g->words.w1 = (unsigned int)(val);             \
+    _g->words.w1 = (uintptr_t)(val);             \
 })
 # define gsSPModifyVertex(vtx, where, val)  \
 {                                           \
    (_SHIFTL(G_MODIFYVTX, 24,  8) |          \
     _SHIFTL((where),     16,  8) |          \
     _SHIFTL((vtx) * 2,    0, 16)),          \
-    (unsigned int)(val)                     \
+    (uintptr_t)(val)                     \
 }
 #else
 # define gSPModifyVertex(pkt, vtx, where, val)          \
@@ -2711,7 +2720,7 @@ _DW({                                               \
 #define G_BZ_ORTHO  1
 
 #define G_DEPTOZSrg(zval, near, far, flag, zmin, zmax)          \
-    (((unsigned int)FTOFIX32(((flag) == G_BZ_PERSP ?            \
+    (((uintptr_t)FTOFIX32(((flag) == G_BZ_PERSP ?            \
                   (1.0f - (float)(near) / (float)(zval)) /      \
                   (1.0f - (float)(near) / (float)(far )) :      \
                   ((float)(zval) - (float)(near)) /             \
@@ -2726,7 +2735,7 @@ _DW({                                                                       \
     Gfx *_g = (Gfx *)(pkt);                                                 \
                                                                             \
     _g->words.w0 = _SHIFTL(G_RDPHALF_1, 24, 8);                             \
-    _g->words.w1 = (unsigned int)(dl);                                      \
+    _g->words.w1 = (uintptr_t)(dl);                                      \
                                                                             \
     _g = (Gfx *)(pkt);                                                      \
                                                                             \
@@ -2739,7 +2748,7 @@ _DW({                                                                       \
 #define gsSPBranchLessZrg(dl, vtx, zval, near, far, flag, zmin, zmax)   \
 {                                                                       \
     _SHIFTL(G_RDPHALF_1, 24, 8),                                        \
-    (unsigned int)(dl),                                                 \
+    (uintptr_t)(dl),                                                 \
 },                                                                      \
 {                                                                       \
    (_SHIFTL(G_BRANCH_Z, 24, 8) |                                        \
@@ -2765,26 +2774,26 @@ _DW({                                               \
     Gfx *_g = (Gfx *)(pkt);                         \
                                                     \
     _g->words.w0 = _SHIFTL(G_RDPHALF_1, 24, 8);     \
-    _g->words.w1 = (unsigned int)(dl);              \
+    _g->words.w1 = (uintptr_t)(dl);              \
                                                     \
     _g = (Gfx *)(pkt);                              \
                                                     \
     _g->words.w0 = (_SHIFTL(G_BRANCH_Z, 24,  8) |   \
                     _SHIFTL((vtx) * 5,  12, 12) |   \
                     _SHIFTL((vtx) * 2,   0, 12));   \
-    _g->words.w1 = (unsigned int)(zval);            \
+    _g->words.w1 = (uintptr_t)(zval);            \
 })
 
 #define gsSPBranchLessZraw(dl, vtx, zval)   \
 {                                           \
     _SHIFTL(G_RDPHALF_1, 24, 8),            \
-    (unsigned int)(dl),                     \
+    (uintptr_t)(dl),                     \
 },                                          \
 {                                           \
    (_SHIFTL(G_BRANCH_Z, 24,  8) |           \
     _SHIFTL((vtx) * 5,  12, 12) |           \
     _SHIFTL((vtx) * 2,   0, 12)),           \
-    (unsigned int)(zval),                   \
+    (uintptr_t)(zval),                   \
 }
 
 /*
@@ -2798,24 +2807,24 @@ _DW({                                                       \
     Gfx *_g = (Gfx *)(pkt);                                 \
                                                             \
     _g->words.w0 = _SHIFTL(G_RDPHALF_1, 24, 8);             \
-    _g->words.w1 = (unsigned int)(uc_dstart);               \
+    _g->words.w1 = (uintptr_t)(uc_dstart);               \
                                                             \
     _g = (Gfx *)(pkt);                                      \
                                                             \
     _g->words.w0 = (_SHIFTL(G_LOAD_UCODE,        24,  8) |  \
                     _SHIFTL((int)(uc_dsize) - 1,  0, 16));  \
-    _g->words.w1 = (unsigned int)(uc_start);                \
+    _g->words.w1 = (uintptr_t)(uc_start);                \
 })
 
 #define gsSPLoadUcodeEx(uc_start, uc_dstart, uc_dsize)  \
 {                                                       \
     _SHIFTL(G_RDPHALF_1, 24, 8),                        \
-    (unsigned int)(uc_dstart),                          \
+    (uintptr_t)(uc_dstart),                          \
 },                                                      \
 {                                                       \
    (_SHIFTL(G_LOAD_UCODE,        24,  8) |              \
     _SHIFTL((int)(uc_dsize) - 1,  0, 16)),              \
-    (unsigned int)(uc_start),                           \
+    (uintptr_t)(uc_start),                           \
 }
 
 #define gSPLoadUcode(pkt, uc_start, uc_dstart)  \
@@ -2843,7 +2852,7 @@ _DW({                                               \
                     _SHIFTL((flag), 23, 1) |        \
                     _SHIFTL((dmem) / 8, 13, 10) |   \
                     _SHIFTL((size) - 1, 0, 12));    \
-    _g->words.w1 = (unsigned int)(dram);            \
+    _g->words.w1 = (uintptr_t)(dram);            \
 })
 
 #define gsSPDma_io(flag, dmem, dram, size)  \
@@ -2852,7 +2861,7 @@ _DW({                                               \
     _SHIFTL((flag),     23,  1) |           \
     _SHIFTL((dmem) / 8, 13, 10) |           \
     _SHIFTL((size) - 1,  0, 12)),           \
-    (unsigned int)(dram)                    \
+    (uintptr_t)(dram)                    \
 }
 
 #define gSPDmaRead(pkt,dmem,dram,size)  gSPDma_io((pkt),0,(dmem),(dram),(size))
@@ -3326,13 +3335,13 @@ _DW({                                                   \
     Gfx *_g = (Gfx *)(pkt);                             \
                                                         \
     _g->words.w0 = _SHIFTL(G_SETGEOMETRYMODE, 24, 8);   \
-    _g->words.w1 = (unsigned int)(word);                \
+    _g->words.w1 = (uintptr_t)(word);                \
 })
 
 #define gsSPSetGeometryMode(word)       \
 {                                       \
     _SHIFTL(G_SETGEOMETRYMODE, 24, 8),  \
-    (unsigned int)(word)                \
+    (uintptr_t)(word)                \
 }
 
 #define gSPClearGeometryMode(pkt, word)                 \
@@ -3340,13 +3349,13 @@ _DW({                                                   \
     Gfx *_g = (Gfx *)(pkt);                             \
                                                         \
     _g->words.w0 = _SHIFTL(G_CLEARGEOMETRYMODE, 24, 8); \
-    _g->words.w1 = (unsigned int)(word);                \
+    _g->words.w1 = (uintptr_t)(word);                \
 })
 
 #define gsSPClearGeometryMode(word)         \
 {                                           \
     _SHIFTL(G_CLEARGEOMETRYMODE, 24, 8),    \
-    (unsigned int)(word)                    \
+    (uintptr_t)(word)                    \
 }
 #endif  /* F3DEX_GBI_2 */
 
@@ -3358,7 +3367,7 @@ _DW({                                                       \
     _g->words.w0 = (_SHIFTL(cmd,                24, 8) |    \
                     _SHIFTL(32 - (sft) - (len),  8, 8) |    \
                     _SHIFTL((len) - 1,           0, 8));    \
-    _g->words.w1 = (unsigned int)(data);                    \
+    _g->words.w1 = (uintptr_t)(data);                    \
 })
 
 #define gsSPSetOtherMode(cmd, sft, len, data)   \
@@ -3366,7 +3375,7 @@ _DW({                                                       \
    (_SHIFTL(cmd,                24, 8) |        \
     _SHIFTL(32 - (sft) - (len),  8, 8) |        \
     _SHIFTL((len) - 1,           0, 8)),        \
-    (unsigned int)(data)                        \
+    (uintptr_t)(data)                        \
 }
 #else
 #define gSPSetOtherMode(pkt, cmd, sft, len, data)   \
@@ -3376,7 +3385,7 @@ _DW({                                               \
     _g->words.w0 = (_SHIFTL(cmd, 24, 8) |           \
                     _SHIFTL(sft,  8, 8) |           \
                     _SHIFTL(len,  0, 8));           \
-    _g->words.w1 = (unsigned int)(data);            \
+    _g->words.w1 = (uintptr_t)(data);            \
 })
 
 #define gsSPSetOtherMode(cmd, sft, len, data)   \
@@ -3384,7 +3393,7 @@ _DW({                                               \
    (_SHIFTL(cmd, 24, 8) |                       \
     _SHIFTL(sft,  8, 8) |                       \
     _SHIFTL(len,  0, 8)),                       \
-    (unsigned int)(data)                        \
+    (uintptr_t)(data)                        \
 }
 #endif
 
@@ -3494,7 +3503,7 @@ _DW({                                               \
                     _SHIFTL(fmt,         21,  3) |  \
                     _SHIFTL(siz,         19,  2) |  \
                     _SHIFTL((width) - 1,  0, 12));  \
-    _g->words.w1 = (unsigned int)(i);               \
+    _g->words.w1 = (uintptr_t)(i);               \
 })
 
 #define gsSetImage(cmd, fmt, siz, width, i) \
@@ -3503,7 +3512,7 @@ _DW({                                               \
     _SHIFTL(fmt,         21,  3) |          \
     _SHIFTL(siz,         19,  2) |          \
     _SHIFTL((width) - 1,  0, 12)),          \
-    (unsigned int)(i)                       \
+    (uintptr_t)(i)                       \
 }
 
 #define gDPSetColorImage(pkt, f, s, w, i)   gSetImage(pkt, G_SETCIMG, f, s, w, i)
@@ -3530,14 +3539,14 @@ _DW({                                               \
                                                     \
     _g->words.w0 = (_SHIFTL(G_SETCOMBINE, 24,  8) | \
                     _SHIFTL(muxs0,         0, 24)); \
-    _g->words.w1 = (unsigned int)(muxs1);           \
+    _g->words.w1 = (uintptr_t)(muxs1);           \
 })
 
 #define gsDPSetCombine(muxs0, muxs1)    \
 {                                       \
    (_SHIFTL(G_SETCOMBINE, 24,  8) |     \
     _SHIFTL(muxs0,         0, 24)),     \
-    (unsigned int)(muxs1)               \
+    (uintptr_t)(muxs1)               \
 }
 
 #define GCCc0w0(saRGB0, mRGB0, saA0, mA0)   \
@@ -3574,7 +3583,7 @@ _DW({                                                                       \
                                     G_ACMUX_##Aa0, G_ACMUX_##Ac0) |         \
                             GCCc1w0(G_CCMUX_##a1,  G_CCMUX_##c1),           \
                         0, 24));                                            \
-    _g->words.w1 =  (unsigned int)(GCCc0w1(G_CCMUX_##b0,  G_CCMUX_##d0,     \
+    _g->words.w1 =  (uintptr_t)(GCCc0w1(G_CCMUX_##b0,  G_CCMUX_##d0,     \
                                            G_ACMUX_##Ab0, G_ACMUX_##Ad0) |  \
                                    GCCc1w1(G_CCMUX_##b1,  G_ACMUX_##Aa1,    \
                                            G_ACMUX_##Ac1, G_CCMUX_##d1,     \
@@ -3589,7 +3598,7 @@ _DW({                                                                       \
                     G_ACMUX_##Aa0, G_ACMUX_##Ac0) |             \
             GCCc1w0(G_CCMUX_##a1,  G_CCMUX_##c1),               \
         0, 24)),                                                \
-    (unsigned int)(GCCc0w1(G_CCMUX_##b0,  G_CCMUX_##d0,         \
+    (uintptr_t)(GCCc0w1(G_CCMUX_##b0,  G_CCMUX_##d0,         \
                            G_ACMUX_##Ab0, G_ACMUX_##Ad0) |      \
                    GCCc1w1(G_CCMUX_##b1,  G_ACMUX_##Aa1,        \
                            G_ACMUX_##Ac1, G_CCMUX_##d1,         \
@@ -3614,13 +3623,13 @@ _DW({                                   \
     Gfx *_g = (Gfx *)(pkt);             \
                                         \
     _g->words.w0 = _SHIFTL(c, 24, 8);   \
-    _g->words.w1 = (unsigned int)(d);   \
+    _g->words.w1 = (uintptr_t)(d);   \
 })
 
 #define gsDPSetColor(c, d)  \
 {                           \
     _SHIFTL(c, 24, 8),      \
-    (unsigned int)(d)       \
+    (uintptr_t)(d)       \
 }
 
 #define DPRGBColor(pkt, cmd, r, g, b, a)    \
@@ -3727,14 +3736,14 @@ _DW({                                                   \
                                                         \
     _g->words.w0 = (_SHIFTL(G_RDPSETOTHERMODE, 24, 8) | \
                     _SHIFTL(mode0, 0, 24));             \
-    _g->words.w1 = (unsigned int)(mode1);               \
+    _g->words.w1 = (uintptr_t)(mode1);               \
 })
 
 #define gsDPSetOtherMode(mode0, mode1)      \
 {                                           \
    (_SHIFTL(G_RDPSETOTHERMODE, 24,  8) |    \
     _SHIFTL(mode0,              0, 24)),    \
-    (unsigned int)(mode1)                   \
+    (uintptr_t)(mode1)                   \
 }
 
 /*
@@ -5128,15 +5137,15 @@ _DW({                                                                           
 })
 
 #define gsDPWord(wordhi, wordlo)                    \
-    gsImmp1(G_RDPHALF_1, (unsigned int)(wordhi)),   \
-    gsImmp1(G_RDPHALF_2, (unsigned int)(wordlo))
+    gsImmp1(G_RDPHALF_1, (uintptr_t)(wordhi)),   \
+    gsImmp1(G_RDPHALF_2, (uintptr_t)(wordlo))
 
 #define gDPWord(pkt, wordhi, wordlo)                    \
 _DW({                                                   \
     Gfx *_g = (Gfx *)(pkt);                             \
                                                         \
-    gImmp1(pkt, G_RDPHALF_1, (unsigned int)(wordhi));   \
-    gImmp1(pkt, G_RDPHALF_2, (unsigned int)(wordlo));   \
+    gImmp1(pkt, G_RDPHALF_1, (uintptr_t)(wordhi));   \
+    gImmp1(pkt, G_RDPHALF_2, (uintptr_t)(wordlo));   \
 })
 
 #define gDPFullSync(pkt)        gDPNoParam(pkt, G_RDPFULLSYNC)

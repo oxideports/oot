@@ -273,7 +273,7 @@ void IrqMgr_HandleRetrace(IrqMgr* irqMgr) {
 }
 
 void IrqMgr_ThreadEntry(void* arg) {
-    u32 msg = 0;
+    OSMesg msg = NULL;
     IrqMgr* irqMgr = (IrqMgr*)arg;
     u8 exit;
 
@@ -281,8 +281,8 @@ void IrqMgr_ThreadEntry(void* arg) {
     exit = false;
 
     while (!exit) {
-        osRecvMesg(&irqMgr->queue, (OSMesg*)&msg, OS_MESG_BLOCK);
-        switch (msg) {
+        osRecvMesg(&irqMgr->queue, &msg, OS_MESG_BLOCK);
+        switch ((uintptr_t)msg) {
 #if OOT_VERSION < PAL_1_0
             default:
                 break;
@@ -323,7 +323,7 @@ void IrqMgr_ThreadEntry(void* arg) {
             default:
                 PRINTF(T("irqmgr.c:予期しないメッセージを受け取りました(%08x)\n",
                          "irqmgr.c: Unexpected message received (%08x)\n"),
-                       msg);
+                       (u32)(uintptr_t)msg);
                 break;
 #endif
         }

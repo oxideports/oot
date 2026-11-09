@@ -1,6 +1,12 @@
 #ifndef STDINT_H
 #define STDINT_H
 
+#ifdef NO_SEGMENTED_MEMORY
+typedef __INT32_TYPE__ int32_t;
+typedef __UINT32_TYPE__ uint32_t;
+typedef __UINT64_TYPE__ uint64_t;
+#endif
+
 typedef signed long intptr_t;
 typedef unsigned long uintptr_t;
 
