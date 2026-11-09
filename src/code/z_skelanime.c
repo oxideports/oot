@@ -1,6 +1,7 @@
 #include "libu64/debug.h"
 #include "avoid_ub.h"
 #include "gfx.h"
+#include "r64_interpolation.h"
 #include "printf.h"
 #include "regs.h"
 #include "segmented_address.h"
@@ -128,7 +129,7 @@ void SkelAnime_DrawLod(PlayState* play, void** skeleton, Vec3s* jointTable, Over
  */
 void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, Vec3s* jointTable,
                                OverrideLimbDrawOpa overrideLimbDraw, PostLimbDrawOpa postLimbDraw, void* arg, s32 lod,
-                               Mtx** mtx) {
+                               Mtx** mtx, R64InterpLink* link) {
     LodLimb* limb;
     Gfx* newDList;
     Gfx* limbDList;
@@ -155,6 +156,7 @@ void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, 
             {
                 OPEN_DISPS(play->state.gfxCtx, "../z_skelanime.c", 946);
                 gSPMatrix(POLY_OPA_DISP++, *mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                R64Interp_LinkSlot(link, *mtx, POLY_OPA_DISP, limbIndex, newDList);
                 gSPDisplayList(POLY_OPA_DISP++, newDList);
                 CLOSE_DISPS(play->state.gfxCtx, "../z_skelanime.c", 949);
             }
@@ -162,6 +164,7 @@ void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, 
         } else if (limbDList != NULL) {
             if (1) {}
             MATRIX_TO_MTX(*mtx, "../z_skelanime.c", 954);
+            R64Interp_LinkSlot(link, *mtx, NULL, limbIndex, NULL);
             (*mtx)++;
         }
     }
@@ -170,14 +173,14 @@ void SkelAnime_DrawFlexLimbLod(PlayState* play, s32 limbIndex, void** skeleton, 
     }
     if (limb->child != LIMB_DONE) {
         SkelAnime_DrawFlexLimbLod(play, limb->child, skeleton, jointTable, overrideLimbDraw, postLimbDraw, arg, lod,
-                                  mtx);
+                                  mtx, link);
     }
 
     Matrix_Pop();
 
     if (limb->sibling != LIMB_DONE) {
         SkelAnime_DrawFlexLimbLod(play, limb->sibling, skeleton, jointTable, overrideLimbDraw, postLimbDraw, arg, lod,
-                                  mtx);
+                                  mtx, link);
     }
 }
 
@@ -194,6 +197,7 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
     Gfx* limbDList;
     Vec3f pos;
     Vec3s rot;
+    R64InterpLink* link;
     Mtx* mtx = GRAPH_ALLOC(play->state.gfxCtx, dListCount * sizeof(Mtx));
 
     if (skeleton == NULL) {
@@ -205,6 +209,7 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
 
     OPEN_DISPS(play->state.gfxCtx, "../z_skelanime.c", 1000);
 
+    link = R64Interp_LinkBegin(play, arg, skeleton, lod, mtx, dListCount);
     gSPSegment(POLY_OPA_DISP++, 0xD, mtx);
     Matrix_Push();
 
@@ -222,10 +227,12 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
         if (newDList != NULL) {
             MATRIX_TO_MTX(mtx, "../z_skelanime.c", 1033);
             gSPMatrix(POLY_OPA_DISP++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+            R64Interp_LinkSlot(link, mtx, POLY_OPA_DISP, 1, newDList);
             gSPDisplayList(POLY_OPA_DISP++, newDList);
             mtx++;
         } else if (limbDList != NULL) {
             MATRIX_TO_MTX(mtx, "../z_skelanime.c", 1040);
+            R64Interp_LinkSlot(link, mtx, NULL, 1, NULL);
             mtx++;
         }
     }
@@ -235,9 +242,10 @@ void SkelAnime_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, 
     }
     if (rootLimb->child != LIMB_DONE) {
         SkelAnime_DrawFlexLimbLod(play, rootLimb->child, skeleton, jointTable, overrideLimbDraw, postLimbDraw, arg, lod,
-                                  &mtx);
+                                  &mtx, link);
     }
 
+    R64Interp_LinkEnd(link);
     Matrix_Pop();
 
     CLOSE_DISPS(play->state.gfxCtx, "../z_skelanime.c", 1053);

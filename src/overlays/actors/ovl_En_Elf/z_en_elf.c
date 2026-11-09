@@ -11,6 +11,7 @@
 #include "libu64/debug.h"
 #include "attributes.h"
 #include "gfx.h"
+#include "r64_interpolation.h"
 #include "gfx_setupdl.h"
 #include "ichain.h"
 #include "rand.h"
@@ -1520,6 +1521,8 @@ s32 EnElf_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
         Matrix_MultVec3f(&zeroVec, &mtxMult);
         Matrix_Translate(mtxMult.x, mtxMult.y, mtxMult.z, MTXMODE_NEW);
         Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
+        R64Interp_Billboard(*gfx + 1, play, &this->actor, 7, limbIndex, 1,
+                            this->fairyFlags & FAIRY_FLAG_BIG, &mtxMult.x, scale, 0.0f, R64_BILLBOARD_SEGMENT_1);
     }
 
     // do not draw wings for big fairies

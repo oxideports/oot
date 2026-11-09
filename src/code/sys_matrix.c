@@ -1,4 +1,5 @@
 #include "libc64/math64.h"
+#include "platform_info.h"
 #include "gfx.h"
 #if DEBUG_FEATURES
 #include "fault.h"
@@ -547,6 +548,12 @@ Mtx* Matrix_MtxFToMtx(MtxF* src, Mtx* dest) {
     u16* m1 = (u16*)&dest->m[0][0];
     u16* m2 = (u16*)&dest->m[2][0];
 
+#if !IS_BIG_ENDIAN
+    // The u16 stores below assume big-endian halves within each Mtx word.
+    guMtxF2L(src->mf, dest);
+    return dest;
+#endif
+
     temp = src->xx * 0x10000;
     m1[0] = (temp >> 0x10);
     m1[16 + 0] = temp & 0xFFFF;
@@ -685,6 +692,11 @@ void Matrix_MtxFCopy(MtxF* dest, MtxF* src) {
 void Matrix_MtxToMtxF(Mtx* src, MtxF* dest) {
     u16* m1 = (u16*)&src->m[0][0];
     u16* m2 = (u16*)&src->m[2][0];
+
+#if !IS_BIG_ENDIAN
+    guMtxL2F(dest->mf, src);
+    return;
+#endif
 
     dest->xx = ((m1[0] << 0x10) | m2[0]) * (1 / 65536.0f);
     dest->yx = ((m1[1] << 0x10) | m2[1]) * (1 / 65536.0f);
@@ -1032,6 +1044,11 @@ void Matrix_SetTranslateUniformScaleMtx2(Mtx* mtx, f32 scale, f32 translateX, f3
     u16* intPart = (u16*)&mtx->m[0][0];
     u16* fracPart = (u16*)&mtx->m[2][0];
     u32 fixedPoint;
+
+#if !IS_BIG_ENDIAN
+    Matrix_SetTranslateUniformScaleMtx(mtx, scale, translateX, translateY, translateZ);
+    return;
+#endif
 
     fixedPoint = (s32)(scale * 0x10000);
     fracPart[0] = fixedPoint & 0xFFFF;

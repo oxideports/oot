@@ -57,7 +57,15 @@ void AudioMgr_HandleRetrace(AudioMgr* audioMgr) {
         // Skip update, no rsp task produced
         rspTask = NULL;
     } else {
+#ifdef NO_SEGMENTED_MEMORY
+        // The audio driver is stubbed on the native runtime (real audio is the arie/M3 task). Its
+        // per-frame update walks the async-load path, which touches audio DMA queues the empty
+        // stub tables never initialize (osRecvMesg on an uncreated queue). Skip it so the audio
+        // thread idles harmlessly while the graph thread drives rendering.
+        rspTask = NULL;
+#else
         rspTask = AudioThread_Update();
+#endif
     }
 
     gAudioThreadUpdateTimeAcc += osGetTime() - gAudioThreadUpdateTimeStart;

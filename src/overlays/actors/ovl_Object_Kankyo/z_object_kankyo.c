@@ -9,6 +9,7 @@
 #include "libc64/qrand.h"
 #include "array_count.h"
 #include "gfx.h"
+#include "r64_interpolation.h"
 #include "gfx_setupdl.h"
 #include "segmented_address.h"
 #include "sequence.h"
@@ -269,6 +270,7 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
 
         switch (this->effects[i].state) {
             case 0: // init
+                R64Interp_ResetPart(&this->actor, i);
                 this->effects[i].base.x = play->view.eye.x + viewForwardsX * 80.0f;
                 this->effects[i].base.y = play->view.eye.y + viewForwardsY * 80.0f;
                 this->effects[i].base.z = play->view.eye.z + viewForwardsZ * 80.0f;
@@ -441,6 +443,8 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
                         this->effects[i].base.z + this->effects[i].pos.z - baseZ > maxDist ||
                         this->effects[i].base.z + this->effects[i].pos.z - baseZ < -maxDist) {
 
+                        R64Interp_ResetPart(&this->actor, i);
+
                         // when a fairy moves off screen, wrap around to the other side
                         if (this->effects[i].base.x + this->effects[i].pos.x - baseX > maxDist) {
                             this->effects[i].base.x = baseX - maxDist;
@@ -471,6 +475,7 @@ void ObjectKankyo_Fairies(ObjectKankyo* this, PlayState* play) {
                 break;
 
             case 3: // reset, never reached
+                R64Interp_ResetPart(&this->actor, i);
                 this->effects[i].state = 0;
                 break;
 
@@ -517,6 +522,7 @@ void ObjectKankyo_DrawFairies(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     ObjectKankyo* this = (ObjectKankyo*)thisx;
     f32 alphaScale;
+    Vec3f anchor;
     Vec3f vec1 = { 0.0f, 0.0f, 0.0f };
     Vec3f vec2 = { 0.0f, 0.0f, 0.0f };
     s16 i;
@@ -528,9 +534,10 @@ void ObjectKankyo_DrawFairies(Actor* thisx, PlayState* play2) {
         gSPDisplayList(POLY_XLU_DISP++, gKokiriDustMoteMaterialDL);
 
         for (i = 0; i < play->envCtx.precipitation[PRECIP_SNOW_MAX]; i++) {
-            Matrix_Translate(this->effects[i].base.x + this->effects[i].pos.x,
-                             this->effects[i].base.y + this->effects[i].pos.y,
-                             this->effects[i].base.z + this->effects[i].pos.z, MTXMODE_NEW);
+            anchor.x = this->effects[i].base.x + this->effects[i].pos.x;
+            anchor.y = this->effects[i].base.y + this->effects[i].pos.y;
+            anchor.z = this->effects[i].base.z + this->effects[i].pos.z;
+            Matrix_Translate(anchor.x, anchor.y, anchor.z, MTXMODE_NEW);
 
             // scale when fading in or out
             alphaScale = this->effects[i].alpha / 50.0f;
@@ -592,6 +599,9 @@ void ObjectKankyo_DrawFairies(Actor* thisx, PlayState* play2) {
             Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
             Matrix_RotateZ(DEG_TO_RAD(play->state.frames * 20.0f), MTXMODE_APPLY);
             MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, "../z_object_kankyo.c", 913);
+            R64Interp_Billboard(POLY_XLU_DISP, play, &this->actor, 6, i, 1, 0, &anchor.x,
+                                this->effects[i].size * alphaScale, DEG_TO_RAD(play->state.frames * 20.0f),
+                                R64_BILLBOARD_CPU);
             gSPDisplayList(POLY_XLU_DISP++, gKokiriDustMoteModelDL);
         }
         CLOSE_DISPS(play->state.gfxCtx, "../z_object_kankyo.c", 922);

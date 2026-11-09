@@ -1,6 +1,7 @@
 #include "sys_cfb.h"
 
 #include "libu64/debug.h"
+#include "alignment.h"
 #include "attributes.h"
 #include "gfx.h"
 #include "line_numbers.h"
@@ -13,6 +14,17 @@
 uintptr_t sSysCfbFbPtr[2];
 uintptr_t sSysCfbEnd;
 
+#ifdef NO_SEGMENTED_MEMORY
+// The N64 framebuffers sit at fixed addresses at the top of RDRAM, which don't exist natively, and the
+// CPU reads them (PreRender's pause and transition filters), so back them with host memory.
+static u16 sNativeFbs[2][SCREEN_WIDTH * SCREEN_HEIGHT] ALIGNED(64);
+
+void SysCfb_Init(s32 n64dd) {
+    sSysCfbFbPtr[0] = (uintptr_t)sNativeFbs[0];
+    sSysCfbFbPtr[1] = (uintptr_t)sNativeFbs[1];
+    sSysCfbEnd = (uintptr_t)(sNativeFbs + 2);
+}
+#else
 void SysCfb_Init(s32 n64dd) {
     u32 screenSize;
     UNUSED_NDEBUG uintptr_t tmpFbEnd;
@@ -55,6 +67,7 @@ void SysCfb_Init(s32 n64dd) {
     PRINTF(T("フレームバッファのアドレスは %08x と %08x です\n", "Frame buffer addresses are %08x and %08x\n"),
            sSysCfbFbPtr[0], sSysCfbFbPtr[1]);
 }
+#endif
 
 void SysCfb_Reset(void) {
     sSysCfbFbPtr[0] = 0;

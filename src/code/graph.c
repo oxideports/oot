@@ -1,3 +1,4 @@
+#include "r64_interpolation.h"
 #include "libc64/malloc.h"
 #include "libc64/sprintf.h"
 #include "libu64/debug.h"
@@ -341,6 +342,7 @@ void Graph_TaskSet00(GraphicsContext* gfxCtx) {
 
     gfxCtx->schedMsgQueue = &gScheduler.cmdQueue;
 
+    R64Interp_End(&gfxCtx->task.list);
     osSendMesg(&gScheduler.cmdQueue, (OSMesg)scTask, OS_MESG_BLOCK);
     Sched_Notify(&gScheduler);
 }
@@ -350,6 +352,7 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {
 
     gameState->inPreNMIState = false;
     Graph_InitTHGA(gfxCtx);
+    R64Interp_Begin(gameState);
 
 #if DEBUG_FEATURES
     OPEN_DISPS(gfxCtx, "../graph.c", 966);
@@ -378,8 +381,11 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {
 
     OPEN_DISPS(gfxCtx, "../graph.c", 999);
 
+    R64Interp_Root(WORK_DISP, 0);
     gSPBranchList(WORK_DISP++, gfxCtx->polyOpaBuffer);
+    R64Interp_Root(POLY_OPA_DISP, 1);
     gSPBranchList(POLY_OPA_DISP++, gfxCtx->polyXluBuffer);
+    R64Interp_Root(POLY_XLU_DISP, 2);
     gSPBranchList(POLY_XLU_DISP++, gfxCtx->overlayBuffer);
     gDPPipeSync(OVERLAY_DISP++);
     gDPFullSync(OVERLAY_DISP++);

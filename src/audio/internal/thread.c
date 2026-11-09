@@ -47,7 +47,7 @@ AudioTask* AudioThread_UpdateImpl(void) {
     s16* curAiBuffer;
     OSTask_t* task;
     s32 index;
-    u32 sp4C;
+    OSMesg sp4C;
     s32 sp48;
     s32 i;
 
@@ -149,9 +149,9 @@ AudioTask* AudioThread_UpdateImpl(void) {
     j = 0;
     if (gAudioCtx.resetStatus == 0) {
         // msg = 0000RREE R = read pos, E = End Pos
-        while (osRecvMesg(gAudioCtx.threadCmdProcQueueP, (OSMesg*)&sp4C, OS_MESG_NOBLOCK) != -1) {
+        while (osRecvMesg(gAudioCtx.threadCmdProcQueueP, &sp4C, OS_MESG_NOBLOCK) != -1) {
             if (1) {}
-            AudioThread_ProcessCmds(sp4C);
+            AudioThread_ProcessCmds((uintptr_t)sp4C);
             j++;
         }
         if ((j == 0) && (gAudioCtx.threadCmdQueueFinished)) {
@@ -534,14 +534,14 @@ void AudioThread_ProcessCmds(u32 msg) {
 }
 
 u32 func_800E5E20(u32* out) {
-    u32 sp1C;
+    OSMesg sp1C;
 
-    if (osRecvMesg(&gAudioCtx.externalLoadQueue, (OSMesg*)&sp1C, OS_MESG_NOBLOCK) == -1) {
+    if (osRecvMesg(&gAudioCtx.externalLoadQueue, &sp1C, OS_MESG_NOBLOCK) == -1) {
         *out = 0;
         return 0;
     }
-    *out = sp1C & 0xFFFFFF;
-    return sp1C >> 0x18;
+    *out = (uintptr_t)sp1C & 0xFFFFFF;
+    return (uintptr_t)sp1C >> 0x18;
 }
 
 u8* AudioThread_GetFontsForSequence(s32 seqId, u32* outNumFonts) {
@@ -558,11 +558,11 @@ void Audio_GetSampleBankIdsOfFont(s32 fontId, u32* sampleBankId1, u32* sampleBan
  */
 s32 func_800E5EDC(void) {
     s32 pad;
-    s32 specId;
+    OSMesg specId;
 
-    if (osRecvMesg(gAudioCtx.audioResetQueueP, (OSMesg*)&specId, OS_MESG_NOBLOCK) == -1) {
+    if (osRecvMesg(gAudioCtx.audioResetQueueP, &specId, OS_MESG_NOBLOCK) == -1) {
         return 0;
-    } else if (gAudioCtx.specId != specId) {
+    } else if (gAudioCtx.specId != (uintptr_t)specId) {
         return -1;
     } else {
         return 1;

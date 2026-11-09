@@ -241,8 +241,8 @@ void* AudioHeap_Alloc(AudioAllocPool* pool, u32 size) {
  * original name: Nas_HeapInit
  */
 void AudioHeap_InitPool(AudioAllocPool* pool, void* ramAddr, u32 size) {
-    pool->curRamAddr = pool->startRamAddr = (u8*)ALIGN16((u32)ramAddr);
-    pool->size = size - ((u32)ramAddr & 0xF);
+    pool->curRamAddr = pool->startRamAddr = (u8*)ALIGN16((uintptr_t)ramAddr);
+    pool->size = size - ((uintptr_t)ramAddr & 0xF);
     pool->numEntries = 0;
 }
 
@@ -610,7 +610,7 @@ void* AudioHeap_AllocCached(s32 tableType, s32 size, s32 cache, s32 id) {
 
             case 1:
                 temporaryCache->entries[1].ramAddr =
-                    (u8*)((u32)(temporaryPool->startRamAddr + temporaryPool->size - size) & ~0xF);
+                    (u8*)((uintptr_t)(temporaryPool->startRamAddr + temporaryPool->size - size) & ~0xF);
                 temporaryCache->entries[1].id = id;
                 temporaryCache->entries[1].size = size;
                 if (temporaryCache->entries[0].id != -1 &&
@@ -1499,7 +1499,7 @@ void AudioHeap_ChangeStorage(StorageChange* change, Sample* sample) {
         u32 startAddr = change->oldAddr;
         u32 endAddr = change->oldAddr + change->size;
 
-        if (((u32)sample->sampleAddr >= startAddr) && ((u32)sample->sampleAddr < endAddr)) {
+        if (((uintptr_t)sample->sampleAddr >= startAddr) && ((uintptr_t)sample->sampleAddr < endAddr)) {
             sample->sampleAddr += -startAddr + change->newAddr;
             sample->medium = change->newMedium;
         }
@@ -1544,7 +1544,7 @@ void AudioHeap_ApplySampleBankCacheInternal(s32 apply, s32 sampleBankId) {
 
     sampleBankTable = gAudioCtx.sampleBankTable;
     numFonts = gAudioCtx.soundFontTable->header.numEntries;
-    change.oldAddr = (u32)AudioHeap_SearchCaches(SAMPLE_TABLE, CACHE_EITHER, sampleBankId);
+    change.oldAddr = (uintptr_t)AudioHeap_SearchCaches(SAMPLE_TABLE, CACHE_EITHER, sampleBankId);
     if (change.oldAddr == 0) {
         return;
     }

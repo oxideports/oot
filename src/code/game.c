@@ -474,7 +474,7 @@ void GameState_Init(GameState* gameState, GameStateFunc init, GraphicsContext* g
 
     // These assignments must be written this way for matching and to avoid a warning due to casting a pointer to an
     // integer without a cast. This assigns init = NULL and size = 0.
-    gameState->size = (u32)(gameState->init = NULL);
+    gameState->size = (uintptr_t)(gameState->init = NULL);
 
     {
         s32 requiredScopeTemp;

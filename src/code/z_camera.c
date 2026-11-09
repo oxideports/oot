@@ -1,3 +1,4 @@
+#include "r64_interpolation.h"
 #include "libc64/math64.h"
 #include "libc64/qrand.h"
 #include "array_count.h"
@@ -6619,7 +6620,7 @@ s32 Camera_Demo5(Camera* camera) {
 
     framesDiff = sDemo5PrevSfxFrame - camera->play->state.frames;
     if ((framesDiff > 50) || (framesDiff < -50)) {
-        Sfx_PlaySfxCentered((u32)camera->data1);
+        Sfx_PlaySfxCentered((uintptr_t)camera->data1);
     }
 
     sDemo5PrevSfxFrame = camera->play->state.frames;
@@ -8510,6 +8511,9 @@ s32 Camera_RequestModeImpl(Camera* camera, s16 requestedMode, u8 forceModeChange
     }
 
     Camera_SetNewModeStateFlags(camera);
+    if (camera->mode != requestedMode) {
+        R64Interp_Epoch(R64_EVENT_CAMERA_MODE);
+    }
     camera->mode = requestedMode;
 
     return requestedMode | 0x80000000;
@@ -8586,6 +8590,9 @@ s16 Camera_RequestSettingImpl(Camera* camera, s16 requestedSetting, s16 flags) {
         camera->bgCamIndex = -1;
     }
 
+    if (camera->setting != requestedSetting) {
+        R64Interp_Epoch(R64_EVENT_CAMERA_SETTING);
+    }
     camera->setting = requestedSetting;
 
     if (Camera_RequestModeImpl(camera, camera->mode, true) >= 0) {

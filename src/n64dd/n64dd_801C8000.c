@@ -111,12 +111,12 @@ void func_801C81EC(struct_801E0D18* arg0) {
     osCreateMesgQueue(&arg0->unk_1C, B_801E0D88, ARRAY_COUNT(B_801E0D88));
 
     if (gCurrentRegion == 1) {
-        arg0->unk_68 = LeoCJCreateLeoManager(LEO_PRIORITY_WRK, LEO_PRIORITY_INT, B_801E0D90, ARRAY_COUNT(B_801E0D90));
+        arg0->unk_68 = (OSMesg)(uintptr_t)LeoCJCreateLeoManager(LEO_PRIORITY_WRK, LEO_PRIORITY_INT, B_801E0D90, ARRAY_COUNT(B_801E0D90));
     } else {
-        arg0->unk_68 = LeoCACreateLeoManager(LEO_PRIORITY_WRK, LEO_PRIORITY_INT, B_801E0D90, ARRAY_COUNT(B_801E0D90));
+        arg0->unk_68 = (OSMesg)(uintptr_t)LeoCACreateLeoManager(LEO_PRIORITY_WRK, LEO_PRIORITY_INT, B_801E0D90, ARRAY_COUNT(B_801E0D90));
     }
 
-    if ((arg0->unk_68 == LEO_ERROR_DEVICE_COMMUNICATION_FAILURE) || (arg0->unk_68 == LEO_ERROR_GOOD)) {
+    if (((uintptr_t)arg0->unk_68 == LEO_ERROR_DEVICE_COMMUNICATION_FAILURE) || ((uintptr_t)arg0->unk_68 == LEO_ERROR_GOOD)) {
         D_801D2E64 = 1;
     }
 }
@@ -126,14 +126,14 @@ void func_801C8298(struct_801E0D18* arg0) {
 
     // TODO: passing a pointer as a logical block address?
     LeoSeek(&sp1C, (u32)&arg0->diskId, &arg0->unk_1C);
-    osRecvMesg(&arg0->unk_1C, (OSMesg*)&arg0->unk_68, OS_MESG_BLOCK);
+    osRecvMesg(&arg0->unk_1C, &arg0->unk_68, OS_MESG_BLOCK);
 }
 
 void func_801C82E0(struct_801E0D18* arg0) {
     LEOCmd sp1C;
 
     LeoSpdlMotor(&sp1C, 4, &arg0->unk_1C);
-    osRecvMesg(&arg0->unk_1C, (OSMesg*)&arg0->unk_68, OS_MESG_BLOCK);
+    osRecvMesg(&arg0->unk_1C, &arg0->unk_68, OS_MESG_BLOCK);
 }
 
 void func_801C832C(struct_801E0D18* arg0) {
@@ -144,7 +144,7 @@ void func_801C832C(struct_801E0D18* arg0) {
         OSMesgQueue* sp28 = &arg0->unk_1C;
 
         LeoReadWrite(&arg0->unk_00, OS_READ, startLBA, (void*)arg0->unk_58, sp34, sp28);
-        osRecvMesg(sp28, (OSMesg*)&arg0->unk_68, OS_MESG_BLOCK);
+        osRecvMesg(sp28, &arg0->unk_68, OS_MESG_BLOCK);
     }
 }
 
@@ -156,12 +156,12 @@ void func_801C83A0(struct_801E0D18* arg0) {
         OSMesgQueue* sp28 = &arg0->unk_1C;
 
         LeoReadWrite(&arg0->unk_00, OS_WRITE, startLBA, (void*)arg0->unk_5C, sp34, sp28);
-        osRecvMesg(sp28, (OSMesg*)&arg0->unk_68, OS_MESG_BLOCK);
+        osRecvMesg(sp28, &arg0->unk_68, OS_MESG_BLOCK);
     }
 }
 
 void func_801C8414(struct_801E0D18* arg0) {
-    arg0->unk_68 = 9;
+    arg0->unk_68 = (OSMesg)(uintptr_t)9;
 }
 
 void func_801C8424(struct_801E0D18* arg0) {
@@ -170,7 +170,7 @@ void func_801C8424(struct_801E0D18* arg0) {
     void (*aux)(struct_801E0D18*);
     s32 temp_v0_2;
 
-    arg0->unk_68 = -1;
+    arg0->unk_68 = (OSMesg)(uintptr_t)-1;
     if ((func_801C81D4() != 0) || (arg0->unk_64 == 0)) {
         arg0->unk_66 = 1;
         temp_v0 = &D_801D2E68[arg0->unk_64];
@@ -253,14 +253,14 @@ void func_801C868C(void* arg0, void* arg1, void* arg2, u8 arg3) {
 s32 func_801C873C(struct_801E0D18* arg0) {
     u8 sp1F;
 
-    arg0->unk_68 = LeoTestUnitReady(&sp1F);
+    arg0->unk_68 = (OSMesg)(uintptr_t)LeoTestUnitReady(&sp1F);
     return !(sp1F & LEO_TEST_UNIT_MR);
 }
 
 s8 func_801C8770(void) {
     s32 temp = func_801C873C(&B_801E0D18);
 
-    if (B_801E0D18.unk_68 == LEO_ERROR_BUSY) {
+    if ((uintptr_t)B_801E0D18.unk_68 == LEO_ERROR_BUSY) {
         return 0;
     }
 
@@ -274,7 +274,7 @@ s8 func_801C8770(void) {
 s32 func_801C87C0(void) {
     if (func_801C8844() == 0) {
         if (B_801E0D18.unk_68 != 0) {
-            return B_801E0D18.unk_68;
+            return (uintptr_t)B_801E0D18.unk_68;
         }
     }
 
@@ -282,14 +282,14 @@ s32 func_801C87C0(void) {
 }
 
 s32 func_801C87FC(void) {
-    s32* new_var = &B_801E0D18.unk_68;
+    OSMesg* new_var = &B_801E0D18.unk_68;
     s32 temp_v0;
 
     if (func_801C8844() == 0) {
         temp_v0 = B_801E0D18.unk_6C;
 
         if ((temp_v0 == 3) || (temp_v0 == 4)) {
-            return *new_var;
+            return (uintptr_t)*new_var;
         }
     }
 
@@ -342,7 +342,7 @@ s32 func_801C88FC(void) {
 
     temp = phi_v1 == temp;
 
-    B_801E0D18.unk_68 = phi_v1;
+    B_801E0D18.unk_68 = (OSMesg)(uintptr_t)phi_v1;
 
     return temp;
 }
