@@ -179,7 +179,7 @@ u64 gspS2DEX2d_fifoTextStart[1], gspS2DEX2d_fifoDataStart[1];
 u64 njpgdspMainTextStart[1], njpgdspMainDataStart[1];
 
 // Mirrors reality64/include/reality64/runtime.h, which can't be included next to OoT's ultra64 headers.
-enum { R64_RSP_GFX_F3DEX2_NON = 3, R64_RSP_GFX_S2DEX2 = 4, R64_RSP_JPEG_NJPGDSP = 6 };
+enum { R64_RSP_GFX_S2DEX2 = 4, R64_RSP_JPEG_NJPGDSP = 6, R64_RSP_GFX_F3DZEX_NON = 8 };
 typedef struct {
     const void* ucode;
     u32 handler;
@@ -189,7 +189,7 @@ s32 R64RspRegister(const R64RspBinding* bindings, size_t count);
 void main_func(void) {
     // No audio binding: the native build never submits an audio task.
     static const R64RspBinding sRspBindings[] = {
-        { gspF3DZEX2_NoN_fifoTextStart, R64_RSP_GFX_F3DEX2_NON },
+        { gspF3DZEX2_NoN_fifoTextStart, R64_RSP_GFX_F3DZEX_NON },
         { gspS2DEX2d_fifoTextStart, R64_RSP_GFX_S2DEX2 },
         { njpgdspMainTextStart, R64_RSP_JPEG_NJPGDSP },
     };
