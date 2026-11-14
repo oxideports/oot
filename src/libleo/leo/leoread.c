@@ -15,7 +15,7 @@ extern OSMesgQueue LEOc2ctrl_que;
 void leoRead_common(unsigned int offset) {
     u32 tg_lba = LEOcur_command->data.readWrite.lba;
     u32 tg_blocks = LEOcur_command->data.readWrite.transferBlks;
-    u32 message;
+    OSMesg message;
     u16 retry_cnt;
 
     if ((tg_lba | tg_blocks) & 0xFFFF0000) {
@@ -45,9 +45,9 @@ void leoRead_common(unsigned int offset) {
     osStartThread(&LEOinterruptThread);
 
     for (;;) {
-        osRecvMesg(&LEOcontrol_que, (OSMesg*)&message, OS_MESG_BLOCK);
+        osRecvMesg(&LEOcontrol_que, &message, OS_MESG_BLOCK);
 
-        switch (message) {
+        switch ((uintptr_t)message) {
             case 0x90000:
                 goto read_complete;
 
@@ -58,7 +58,7 @@ void leoRead_common(unsigned int offset) {
                 break;
 
             default:
-                LEOcur_command->header.sense = message;
+                LEOcur_command->header.sense = (uintptr_t)message;
                 LEOcur_command->header.status = LEO_STATUS_CHECK_CONDITION;
                 return;
         }

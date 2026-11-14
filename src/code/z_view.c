@@ -1,3 +1,4 @@
+#include "r64_interpolation.h"
 #include "view.h"
 
 #include "libc64/malloc.h"
@@ -363,6 +364,7 @@ s32 View_ApplyPerspective(View* view) {
 
     View_StepDistortion(view, projection);
 
+    R64Interp_Camera(view, projection, R64_MATRIX_PROJECTION);
     gSPPerspNormalize(POLY_OPA_DISP++, view->normal);
     gSPMatrix(POLY_OPA_DISP++, projection, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
     gSPPerspNormalize(POLY_XLU_DISP++, view->normal);
@@ -402,6 +404,7 @@ s32 View_ApplyPerspective(View* view) {
     }
 #endif
 
+    R64Interp_Camera(view, viewing, R64_MATRIX_VIEW);
     gSPMatrix(POLY_OPA_DISP++, viewing, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
     gSPMatrix(POLY_XLU_DISP++, viewing, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
 

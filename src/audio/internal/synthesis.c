@@ -881,7 +881,7 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSampleState* sampleState, NoteSy
         sample = sampleState->tunedSample->sample;
         loopInfo = sample->loop;
         loopEndPos = loopInfo->header.end;
-        sampleAddr = (u32)sample->sampleAddr;
+        sampleAddr = (uintptr_t)sample->sampleAddr;
         resampledTempLen = 0;
 
         for (curPart = 0; curPart < nParts; curPart++) {
@@ -1015,7 +1015,7 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSampleState* sampleState, NoteSy
                         return cmd;
                     }
 
-                    sampleDataStartPad = (u32)sampleData & 0xF;
+                    sampleDataStartPad = (uintptr_t)sampleData & 0xF;
                     aligned = ALIGN16((nFramesToDecode * frameSize) + SAMPLES_PER_FRAME);
                     addr = DMEM_COMPRESSED_ADPCM_DATA - aligned;
                     aLoadBuffer(cmd++, sampleData - sampleDataStartPad, addr, aligned);

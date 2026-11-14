@@ -2,11 +2,20 @@
 #define FONT_H
 
 #include "ultra64.h"
+#include "platform_info.h"
 
 // TODO get these properties from the textures themselves
 #define FONT_CHAR_TEX_WIDTH  16
 #define FONT_CHAR_TEX_HEIGHT 16
 #define FONT_CHAR_TEX_SIZE ((FONT_CHAR_TEX_WIDTH * FONT_CHAR_TEX_HEIGHT) / 2) // 16x16 I4 texture
+
+// Wide (Shift-JIS) message text is stored in N64 byte order; the game reads it as u16s.
+#if IS_BIG_ENDIAN
+#define FONT_WIDE_TO_HOST(buf, size) (void)0
+#else
+#define FONT_WIDE_TO_HOST(buf, size) Font_SwapWideText(buf, size)
+void Font_SwapWideText(u16* buf, s32 size);
+#endif
 
 typedef struct Font {
     /* 0x0000 */ u32 msgOffset;

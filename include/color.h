@@ -2,6 +2,7 @@
 #define COLOR_H
 
 #include "ultra64/ultratypes.h"
+#include "platform_info.h"
 
 typedef struct Color_RGB8 {
     u8 r, g, b;
@@ -25,10 +26,17 @@ typedef struct Color_RGBAf {
 
 typedef union Color_RGBA16 {
     struct {
+#if IS_BIG_ENDIAN
         u16 r : 5;
         u16 g : 5;
         u16 b : 5;
         u16 a : 1;
+#else
+        u16 a : 1;
+        u16 b : 5;
+        u16 g : 5;
+        u16 r : 5;
+#endif
     };
     u16 rgba;
 } Color_RGBA16;

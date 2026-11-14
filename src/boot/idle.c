@@ -51,6 +51,10 @@ void Main_ThreadEntry(void* arg) {
 
     PRINTF(T("mainx 実行開始\n", "mainx execution started\n"));
     DmaMgr_Init();
+#ifndef NO_SEGMENTED_MEMORY
+    // The code segment is DMA'd from ROM to RAM then its .bss cleared. Natively the game code is linked
+    // into the executable (already resident, .bss already zeroed by the loader); _codeSegment* are
+    // resident-code stubs, so both steps would corrupt host memory.
     PRINTF(T("codeセグメントロード中...", "code segment loading..."));
     time = osGetTime();
     DMA_REQUEST_SYNC(_codeSegmentStart, (uintptr_t)_codeSegmentRomStart, _codeSegmentRomEnd - _codeSegmentRomStart,
@@ -60,6 +64,9 @@ void Main_ThreadEntry(void* arg) {
     PRINTF(T("転送時間 %6.3f\n", "Transfer time %6.3f\n"));
     bzero(_codeSegmentBssStart, _codeSegmentBssEnd - _codeSegmentBssStart);
     PRINTF(T("codeセグメントBSSクリア完了\n", "code segment BSS cleared\n"));
+#else
+    (void)time;
+#endif
     Main(arg);
     PRINTF(T("mainx 実行終了\n", "mainx execution finished\n"));
 }
