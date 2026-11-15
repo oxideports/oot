@@ -96,6 +96,13 @@ def main():
     print(f"\nPASS1 DONE: ok={ok} fail={len(fails)} global_syms={len(gsyms)}",flush=True)
     from collections import Counter
     print("fail reasons:", Counter(f[1].split(':')[0] for f in fails).most_common(8))
-    for f in fails[:12]: print("  FAIL", f)
+    for f in fails: print("  FAIL", f)
+    # The segments listed in expected_fails.txt never build (baserom incbins with no source, the unused
+    # n64dd). Any other failure, or one of those starting to build, means the image changed: stop here.
+    expected=set(open(os.path.join(os.path.dirname(__file__),"expected_fails.txt")).read().split())
+    failed={f[0] for f in fails}
+    for n in sorted(failed-expected): print("  UNEXPECTED FAIL", n)
+    for n in sorted(expected-failed): print("  NOW BUILDS (remove from expected_fails.txt)", n)
+    if failed!=expected: sys.exit(1)
 
 if __name__=="__main__": main()

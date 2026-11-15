@@ -1,0 +1,16 @@
+n64dd
+gameplay_object_exchange_static
+bump_texture_static
+anime_model_1_static
+anime_model_2_static
+anime_model_3_static
+anime_model_4_static
+anime_model_5_static
+anime_model_6_static
+anime_texture_1_static
+anime_texture_2_static
+anime_texture_3_static
+anime_texture_4_static
+anime_texture_5_static
+anime_texture_6_static
+softsprite_matrix_static
