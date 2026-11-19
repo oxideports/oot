@@ -252,10 +252,10 @@ u8 leoSeek_w(void) {
 }
 
 u8 leoRecv_event_mesg(s32 control) {
-    u32 done_mesg;
+    OSMesg done_mesg;
 
-    if (osRecvMesg(&LEOevent_que, (OSMesg*)&done_mesg, control) == 0) {
-        if (done_mesg == 0xA0000) {
+    if (osRecvMesg(&LEOevent_que, &done_mesg, control) == 0) {
+        if ((uintptr_t)done_mesg == 0xA0000) {
             leoDrive_reset();
             return -1;
         }

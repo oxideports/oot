@@ -21,6 +21,17 @@ KaleidoMgrOverlay* gKaleidoMgrCurOvl = NULL;
 u8 gBossMarkState = 0;
 
 void KaleidoManager_LoadOvl(KaleidoMgrOverlay* ovl) {
+    // Native overlays are linked directly into the executable — their segment symbols are 0, so there
+    // is no image to DMA or relocate (doing so reads garbage past a zero-length transfer and faults).
+    // Mark the overlay current with an identity offset; its entrypoints are reached through their
+    // native symbols (see KaleidoManager_GetRamAddr). Mirrors the actor loader's `vramStart == NULL`
+    // "not an overlay" path in z_actor.c.
+    if (ovl->vramStart == NULL) {
+        ovl->offset = 0;
+        gKaleidoMgrCurOvl = ovl;
+        return;
+    }
+
     LOG_UTILS_CHECK_NULL_POINTER("KaleidoArea_allocp", sKaleidoAreaPtr, "../z_kaleido_manager.c", 99);
 
     ovl->loadedRamAddr = sKaleidoAreaPtr;
@@ -85,6 +96,13 @@ void KaleidoManager_Destroy(void) {
 void* KaleidoManager_GetRamAddr(void* vram) {
     KaleidoMgrOverlay* iter = gKaleidoMgrCurOvl;
     KaleidoMgrOverlay* ovl = iter;
+
+    // Native overlays are linked in-place (segment symbols are 0), so `vram` already resolves to the
+    // real function address — the vram->ram translation below would only reject it against the zero
+    // vram range. Return it unchanged.
+    if (gKaleidoMgrOverlayTable[0].vramStart == NULL) {
+        return vram;
+    }
 
     if (ovl == NULL) {
         u32 i;

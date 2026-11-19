@@ -1,0 +1,66 @@
+name: PC port build
+
+on:
+  push:
+    branches: [pc-port]
+  pull_request:
+    branches: [pc-port]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_TOOLCHAIN: 1.100.0
+
+jobs:
+  build:
+    name: Build without the baserom
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+          rustup default "$RUST_TOOLCHAIN"
+          brew install ninja llvm@20 lld@20
+          echo "LLVM_BIN=$(brew --prefix llvm@20)/bin:$(brew --prefix lld@20)/bin" >> "$GITHUB_ENV"
+          python3.13 -m pip install pyyaml==6.0.2
+
+      - name: Get reality64 revision
+        id: reality64
+        run: echo "sha=$(git rev-parse HEAD:reality64)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache cargo target
+        uses: actions/cache@v6
+        with:
+          path: build-cmake/cargo
+          key: cargo-${{ runner.os }}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('reality64/Cargo.lock') }}-${{ steps.reality64.outputs.sha }}
+          restore-keys: cargo-${{ runner.os }}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('reality64/Cargo.lock') }}-
+
+      - name: Write asset stand-ins
+        run: python3.13 tools/r64builder/stub_assets.py
+
+      - name: Build
+        # r64builder needs llvm-nm, llvm-objcopy and ld.lld; Apple's clang stays first on PATH.
+        run: |
+          export PATH="$PATH:$LLVM_BIN"
+          cmake -S . -B build-cmake -GNinja
+          cmake --build build-cmake
+
+      - name: Test command macros
+        run: |
+          clang -Iinclude -o build-cmake/cmd_macros_test tools/r64builder/tests/cmd_macros_test.c
+          build-cmake/cmd_macros_test

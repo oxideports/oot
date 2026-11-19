@@ -6,6 +6,7 @@
 #include "array_count.h"
 #include "buffers.h"
 #include "gfx.h"
+#include "r64_interpolation.h"
 #include "gfx_setupdl.h"
 #include "gfxalloc.h"
 #include "ultra64.h"
@@ -1483,6 +1484,13 @@ void Environment_DrawSunAndMoon(PlayState* play) {
         Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
         MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx, "../z_kankyo.c", 2364);
         Gfx_SetupDL_54Opa(play->state.gfxCtx);
+        if (gR64InterpActive) {
+            float anchor[3] = { play->view.eye.x + play->envCtx.sunPos.x,
+                                play->view.eye.y + play->envCtx.sunPos.y,
+                                play->view.eye.z + play->envCtx.sunPos.z };
+            R64Interp_Billboard(POLY_OPA_DISP, play, NULL, 10, 0, 0, 0, anchor, scale, 0.0f,
+                                R64_BILLBOARD_SEGMENT_1);
+        }
         gSPDisplayList(POLY_OPA_DISP++, gSunDL);
 
         Matrix_Translate(play->view.eye.x - play->envCtx.sunPos.x, play->view.eye.y - play->envCtx.sunPos.y,

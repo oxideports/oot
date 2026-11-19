@@ -27,6 +27,12 @@ typedef struct LocaleCartInfo {
 } LocaleCartInfo; // size = 0x20
 
 void Locale_Init(void) {
+#ifdef NO_SEGMENTED_MEMORY
+    // The native image has no N64 ROM header, so the region/country byte at ROM 0x3C is unavailable and
+    // would read as garbage — hanging the boot on the "unknown region" fault. The build already knows
+    // the region (OOT_REGION).
+    gCurrentRegion = OOT_REGION;
+#else
 #if !PLATFORM_GC
     ALIGNED(4) u8 regionInfo[4];
     u8 countryCode;
@@ -71,6 +77,7 @@ void Locale_Init(void) {
 #else
     gCurrentRegion = REGION_US;
 #endif
+#endif // NO_SEGMENTED_MEMORY
 }
 
 void Locale_ResetRegion(void) {

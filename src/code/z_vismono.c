@@ -13,6 +13,7 @@
 #include "attributes.h"
 #include "gfx.h"
 #include "gfxalloc.h"
+#include "platform_info.h"
 #include "vis.h"
 
 // Height of the fragments the color frame buffer (CFB) is split into.
@@ -71,6 +72,10 @@ void VisMono_DesaturateTLUT(VisMono* this, u16* tlut) {
         tlut[i] = GPACK_IA16(
             ((i >> 3 & 0x1F) * VISMONO_FAC_RED + (i << 2 & 0x1F) * VISMONO_FAC_GREEN) * 255 / VISMONO_FAC_NORM,
             ((i >> 6 & 0x1F) * VISMONO_FAC_GREEN + (i >> 1 & 0x1F) * VISMONO_FAC_BLUE) * 255 / VISMONO_FAC_NORM);
+#if !IS_BIG_ENDIAN
+        // The RDP reads TLUT entries in N64 byte order.
+        tlut[i] = __builtin_bswap16(tlut[i]);
+#endif
     }
 }
 

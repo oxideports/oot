@@ -1,3 +1,4 @@
+#include "r64_interpolation.h"
 #include "libu64/debug.h"
 #include "ultra64/gs2dex.h"
 #include "array_count.h"
@@ -11,6 +12,7 @@
 #if PLATFORM_N64
 #include "n64dd.h"
 #endif
+#include "platform_info.h"
 #include "printf.h"
 #include "regs.h"
 #include "segmented_address.h"
@@ -81,10 +83,12 @@ void Room_DrawNormal(PlayState* play, Room* room, u32 flags) {
     entry = SEGMENTED_TO_VIRTUAL(roomShape->entries);
     for (i = 0; i < roomShape->numEntries; i++) {
         if ((flags & ROOM_DRAW_OPA) && (entry->opa != NULL)) {
+            R64Interp_Room(POLY_OPA_DISP, play, room, i, 0);
             gSPDisplayList(POLY_OPA_DISP++, entry->opa);
         }
 
         if ((flags & ROOM_DRAW_XLU) && (entry->xlu != NULL)) {
+            R64Interp_Room(POLY_XLU_DISP, play, room, i, 1);
             gSPDisplayList(POLY_XLU_DISP++, entry->xlu);
         }
 
@@ -244,6 +248,8 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
                 if (flags & ROOM_DRAW_OPA) {
                     displayList = roomShapeCullableEntry->opa;
                     if (displayList != NULL) {
+                        R64Interp_Room(POLY_OPA_DISP, play, room,
+                                       roomShapeCullableEntry - roomShapeCullableEntries, 0);
                         gSPDisplayList(POLY_OPA_DISP++, displayList);
                     }
                 }
@@ -251,6 +257,8 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
                 if (flags & ROOM_DRAW_XLU) {
                     displayList = roomShapeCullableEntry->xlu;
                     if (displayList != NULL) {
+                        R64Interp_Room(POLY_XLU_DISP, play, room,
+                                       roomShapeCullableEntry - roomShapeCullableEntries, 1);
                         gSPDisplayList(POLY_XLU_DISP++, displayList);
                     }
                 }
@@ -259,6 +267,8 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
             if (flags & ROOM_DRAW_OPA) {
                 displayList = roomShapeCullableEntry->opa;
                 if (displayList != NULL) {
+                    R64Interp_Room(POLY_OPA_DISP, play, room,
+                                   roomShapeCullableEntry - roomShapeCullableEntries, 0);
                     gSPDisplayList(POLY_OPA_DISP++, displayList);
                 }
             }
@@ -266,6 +276,8 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
             if (flags & ROOM_DRAW_XLU) {
                 displayList = roomShapeCullableEntry->xlu;
                 if (displayList != NULL) {
+                    R64Interp_Room(POLY_XLU_DISP, play, room,
+                                   roomShapeCullableEntry - roomShapeCullableEntries, 1);
                     gSPDisplayList(POLY_XLU_DISP++, displayList);
                 }
             }
@@ -286,7 +298,11 @@ void Room_DrawCullable(PlayState* play, Room* room, u32 flags) {
 s32 Room_DecodeJpeg(void* data) {
     OSTime time;
 
+#if IS_BIG_ENDIAN
     if (*(u32*)data == JPEG_MARKER) {
+#else
+    if (__builtin_bswap32(*(u32*)data) == JPEG_MARKER) {
+#endif
         PRINTF(T("JPEGデータを展開します\n", "Expanding jpeg data\n"));
         PRINTF(T("JPEGデータアドレス %08x\n", "Jpeg data address %08x\n"), data);
         PRINTF(T("ワークバッファアドレス（Ｚバッファ）%08x\n", "Work buffer address (Z buffer) %08x\n"), gZBuffer);
@@ -729,6 +745,7 @@ s32 Room_ProcessRoomRequest(PlayState* play, RoomContext* roomCtx) {
         if (osRecvMesg(&roomCtx->loadQueue, NULL, OS_MESG_NOBLOCK) == 0) {
             roomCtx->status = 0;
             roomCtx->curRoom.segment = roomCtx->roomRequestAddr;
+            R64Interp_RoomLoaded(roomCtx);
             gSegments[3] = OS_K0_TO_PHYSICAL(roomCtx->curRoom.segment);
 
             Scene_ExecuteCommands(play, roomCtx->curRoom.segment);

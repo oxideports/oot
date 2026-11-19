@@ -31,7 +31,11 @@ void bootproc(void) {
 #if PLATFORM_N64
     CIC6105_SaveBootMagicValues();
 #endif
+#ifndef NO_SEGMENTED_MEMORY
+    // bootclear() bzero's all RAM above _bootSegmentEnd using the N64 KSEG0 map. Natively there is no
+    // guest RDRAM to wipe (host .bss is already zero) and _bootSegmentEnd is a resident-code stub.
     bootclear();
+#endif
     osInitialize();
 
     gCartHandle = osCartRomInit();

@@ -487,6 +487,12 @@ void Sched_HandleNotification(Scheduler* sc) {
 
     // Enqueue any tasks sent by other threads
     while (osRecvMesg(&sc->cmdQueue, (OSMesg*)&task, OS_MESG_NOBLOCK) != -1) {
+#ifdef NO_SEGMENTED_MEMORY
+        // Defensive on the native runtime: skip a spurious NULL task rather than dereferencing it.
+        if (task == NULL) {
+            continue;
+        }
+#endif
         Sched_QueueTask(sc, task);
     }
 
@@ -655,7 +661,7 @@ void Sched_ThreadEntry(void* arg) {
         // Await interrupt messages, either from the OS, IrqMgr, or another thread
         osRecvMesg(&sc->interruptQueue, &msg, OS_MESG_BLOCK);
 
-        switch ((s32)msg) {
+        switch ((intptr_t)msg) {
             case NOTIFY_MSG:
                 SCHED_DEBUG_PRINTF("%08d:ENTRY_MSG\n", (u32)OS_CYCLES_TO_USEC(osGetTime()));
                 Sched_HandleNotification(sc);

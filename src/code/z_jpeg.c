@@ -1,4 +1,5 @@
 #include "jpeg.h"
+#include "platform_info.h"
 
 #include "array_count.h"
 #include "attributes.h"
@@ -110,6 +111,10 @@ void Jpeg_CopyToZbuffer(u16* src, u16* zbuffer, s32 x, s32 y) {
  * unaligned values in JPEG header files.
  */
 u16 Jpeg_GetUnalignedU16(u8* ptr) {
+#if !IS_BIG_ENDIAN
+    // The JFIF value is big-endian.
+    return (ptr[0] << 8) | ptr[1];
+#endif
     if (((uintptr_t)ptr & 1) == 0) {
         // Read the value normally if it's aligned to a 16-bit address.
         return *(u16*)ptr;

@@ -1,4 +1,5 @@
 #include "skin_matrix.h"
+#include "platform_info.h"
 
 #include "gfx.h"
 #include "printf.h"
@@ -525,6 +526,12 @@ void SkinMatrix_MtxFToMtx(MtxF* src, Mtx* dest) {
     s32 temp;
     u16* m1 = (u16*)&dest->m[0][0];
     u16* m2 = (u16*)&dest->m[2][0];
+
+#if !IS_BIG_ENDIAN
+    // The u16 stores below assume big-endian halves within each Mtx word.
+    guMtxF2L(src->mf, dest);
+    return;
+#endif
 
     temp = src->xx * 0x10000;
     m1[0] = (temp >> 0x10);

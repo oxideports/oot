@@ -1,3 +1,4 @@
+#include "r64_interpolation.h"
 #include "libc64/math64.h"
 #include "libu64/overlay.h"
 #include "array_count.h"
@@ -2625,7 +2626,7 @@ void Actor_Draw(PlayState* play, Actor* actor) {
         }
     }
 
-    actor->draw(actor, play);
+    R64_INTERP_WORLD(play->state.gfxCtx, 4, R64Interp_ActorId(actor), actor->draw(actor, play));
 
     if (actor->colorFilterTimer != 0) {
         if (actor->colorFilterParams & COLORFILTER_BUFFLAG_XLU) {
@@ -2636,7 +2637,7 @@ void Actor_Draw(PlayState* play, Actor* actor) {
     }
 
     if (actor->shape.shadowDraw != NULL) {
-        actor->shape.shadowDraw(actor, lights, play);
+        R64_INTERP_WORLD(play->state.gfxCtx, 5, R64Interp_ActorId(actor), actor->shape.shadowDraw(actor, lights, play));
     }
 
     CLOSE_DISPS(play->state.gfxCtx, "../z_actor.c", 6119);
@@ -2964,11 +2965,11 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
     }
 
     if (!DEBUG_FEATURES || (HREG(64) != 1) || (HREG(73) != 0)) {
-        Effect_DrawAll(play->state.gfxCtx);
+        R64_INTERP_WORLD(play->state.gfxCtx, 8, 0, Effect_DrawAll(play->state.gfxCtx));
     }
 
     if (!DEBUG_FEATURES || (HREG(64) != 1) || (HREG(74) != 0)) {
-        EffectSs_DrawAll(play);
+        R64_INTERP_WORLD(play->state.gfxCtx, 8, 1, EffectSs_DrawAll(play));
     }
 
     if (!DEBUG_FEATURES || (HREG(64) != 1) || (HREG(72) != 0)) {
@@ -2980,14 +2981,14 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
         }
     }
 
-    Actor_DrawFaroresWindPointer(play);
+    R64_INTERP_WORLD(play->state.gfxCtx, 10, 6, Actor_DrawFaroresWindPointer(play));
 
     if (IREG(32) == 0) {
-        Lights_DrawGlow(play);
+        R64_INTERP_WORLD(play->state.gfxCtx, 10, 7, Lights_DrawGlow(play));
     }
 
     if (!DEBUG_FEATURES || (HREG(64) != 1) || (HREG(75) != 0)) {
-        TitleCard_Draw(play, &actorCtx->titleCtx);
+        R64_INTERP_DRAW(play->state.gfxCtx, R64_TRANSFORM_SCREEN_SPACE, 9, TitleCard_Draw(play, &actorCtx->titleCtx));
     }
 
 #if DEBUG_FEATURES
@@ -3410,6 +3411,7 @@ Actor* Actor_Delete(ActorContext* actorCtx, Actor* actor, PlayState* play) {
 
     newHead = Actor_RemoveFromCategory(play2, actorCtx, actor);
 
+    R64Interp_ActorDeleted(actor);
     ZELDA_ARENA_FREE(actor, "../z_actor.c", 7242);
 
     if (overlayEntry->vramStart == NULL) {

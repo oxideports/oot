@@ -15,6 +15,16 @@
 #define BYTES_PER_ROW 32
 #define LINE_MASK     (BYTES_PER_ROW - 1)
 
+// Literals are written so the compiled array holds the input bytes in order: big-endian for the
+// N64, little-endian for a native build that declares texture data as u32/u64 arrays.
+static bool target_little_endian = false;
+
+void
+bin2c_set_little_endian(bool little_endian)
+{
+    target_little_endian = little_endian;
+}
+
 int
 bin2c(char **out, size_t *size_out, void *bin, size_t size, size_t pad_to_size, unsigned int byte_width)
 {
@@ -47,7 +57,7 @@ bin2c(char **out, size_t *size_out, void *bin, size_t size, size_t pad_to_size, 
         memcpy(&d, &((uint8_t *)bin)[p], rem);
 
         // Byteswap + shift
-        d = be64toh(d) >> (64 - 8 * byte_width);
+        d = target_little_endian ? le64toh(d) : be64toh(d) >> (64 - 8 * byte_width);
 
         // Write output
         was_newline = (((p + byte_width) & LINE_MASK) == 0);
@@ -100,7 +110,7 @@ bin2c_file(const char *out_path, void *bin, size_t size, size_t pad_to_size, uns
         memcpy(&d, &((uint8_t *)bin)[p], rem);
 
         // Byteswap + shift
-        d = be64toh(d) >> (64 - 8 * byte_width);
+        d = target_little_endian ? le64toh(d) : be64toh(d) >> (64 - 8 * byte_width);
 
         // Write output
         was_newline = (((p + byte_width) & LINE_MASK) == 0);

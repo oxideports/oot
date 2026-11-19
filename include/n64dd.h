@@ -78,7 +78,7 @@ typedef struct struct_801E0D18 {
     /* 0x64 */ u8 unk_64;
     /* 0x65 */ u8 unk_65;
     /* 0x66 */ u8 unk_66;
-    /* 0x68 */ s32 unk_68;
+    /* 0x68 */ OSMesg unk_68;
     /* 0x6C */ s32 unk_6C;
 } struct_801E0D18; // size = 0x70
 

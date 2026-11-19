@@ -54,6 +54,16 @@ void MapMark_Init(PlayState* play) {
     MapMarkDataOverlay* overlay = &sMapMarkDataOvl;
     u32 overlaySize = (uintptr_t)overlay->vramEnd - (uintptr_t)overlay->vramStart;
 
+    // Native overlays are linked directly into the executable — their segment symbols are 0 (see
+    // tools/r64builder/gen_manifest.py), so there is no image to DMA and no MIPS relocations to
+    // apply; the data table is reached through its native symbol. Mirrors the `vramStart == NULL`
+    // "not an overlay" gates in z_actor.c / z_effect_soft_sprite.c / z_kaleido_manager.c (this
+    // loader was the only unguarded Overlay_Load caller).
+    if (overlay->vramStart == NULL) {
+        sLoadedMarkDataTable = gMapMarkDataTable;
+        return;
+    }
+
     overlay->loadedRamAddr = GAME_STATE_ALLOC(&play->state, overlaySize, "../z_map_mark.c", 235);
     LOG_UTILS_CHECK_NULL_POINTER("dlftbl->allocp", overlay->loadedRamAddr, "../z_map_mark.c", 236);
 

@@ -1,0 +1,6 @@
+[submodule "reality64"]
+	path = reality64
+	url = https://github.com/retrofoundry/reality64.git
+[submodule "corrosion"]
+	path = corrosion
+	url = https://github.com/corrosion-rs/corrosion.git

@@ -7,8 +7,19 @@ typedef signed char            s8;
 typedef unsigned char          u8;
 typedef signed short int       s16;
 typedef unsigned short int     u16;
+// On the N64 (ILP32) `long` is 32-bit, so upstream's `s32 = signed long` is 32-bit on hardware. On
+// an LP64 host `long` is 64-bit, which silently doubles the width of every RSP/DMA-facing libultra
+// value (Mtx words, OSTask/OSIoMesg fields, the overlay relocation section, ...) and breaks the
+// fixed 32-bit N64 struct layout the RCP/fast3d read. Define N64_MATCHING_TYPE_WIDTHS (our native
+// build does, globally) to keep those types at the N64's 32-bit width via `int`; leave it undefined
+// for a byte-matching build that reproduces the original `long` source declarations verbatim.
+#ifdef N64_MATCHING_TYPE_WIDTHS
+typedef signed int             s32;
+typedef unsigned int           u32;
+#else
 typedef signed long            s32;
 typedef unsigned long          u32;
+#endif
 typedef signed long long int   s64;
 typedef unsigned long long int u64;
 

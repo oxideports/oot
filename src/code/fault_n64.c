@@ -760,15 +760,15 @@ void Fault_ThreadEntry(void* arg0) {
         do {
             osRecvMesg(&gFaultMgr.queue, &msg, OS_MESG_BLOCK);
             if (msg == FAULT_MSG_CPU_BREAK) {
-                gFaultMsgId = (s32)FAULT_MSG_CPU_BREAK;
+                gFaultMsgId = (intptr_t)FAULT_MSG_CPU_BREAK;
                 osSyncPrintf(T("フォルトマネージャ:OS_EVENT_CPU_BREAKを受信しました\n",
                                "Fault Manager: OS_EVENT_CPU_BREAK received\n"));
             } else if (msg == FAULT_MSG_FAULT) {
-                gFaultMsgId = (s32)FAULT_MSG_FAULT;
+                gFaultMsgId = (intptr_t)FAULT_MSG_FAULT;
                 osSyncPrintf(
                     T("フォルトマネージャ:OS_EVENT_FAULTを受信しました\n", "Fault Manager: OS_EVENT_FAULT received\n"));
             } else {
-                gFaultMsgId = (s32)FAULT_MSG_UNK;
+                gFaultMsgId = (intptr_t)FAULT_MSG_UNK;
                 osSyncPrintf(T("フォルトマネージャ:不明なメッセージを受信しました\n",
                                "Fault Manager: Unknown message received\n"));
             }

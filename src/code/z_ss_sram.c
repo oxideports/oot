@@ -15,9 +15,9 @@ void SsSram_Init(s32 addr, u8 handleType, u8 handleDomain, u8 handleLatency, u8 
     u32 prevInt;
     OSPiHandle* handle = &sSsSramContext.piHandle;
 
-    if ((u32)OS_PHYSICAL_TO_K1(addr) != (*handle).baseAddress) {
+    if ((uintptr_t)OS_PHYSICAL_TO_K1(addr) != (*handle).baseAddress) {
         sSsSramContext.piHandle.type = handleType;
-        (*handle).baseAddress = (u32)OS_PHYSICAL_TO_K1(addr);
+        (*handle).baseAddress = (uintptr_t)OS_PHYSICAL_TO_K1(addr);
         sSsSramContext.piHandle.latency = handleLatency;
         sSsSramContext.piHandle.pulse = handlePulse;
         sSsSramContext.piHandle.pageSize = handlePageSize;

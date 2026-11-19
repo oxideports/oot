@@ -1178,7 +1178,7 @@ void func_80B3EC0C(EnXc* this, PlayState* play) {
 
         if ((cue != NULL) && (cue->id != 1)) {
             PosRot* posRot = &this->actor.world;
-            Vec3i* startPos = &cue->startPos;
+            CsCmdVec3* startPos = &cue->startPos;
             ActorShape* shape = &this->actor.shape;
 
             posRot->pos.x = startPos->x;
@@ -1667,7 +1667,7 @@ void func_80B3FF0C(EnXc* this, PlayState* play) {
             if (cue != NULL) {
                 PosRot* posRot = &this->actor.world;
                 ActorShape* shape = &this->actor.shape;
-                Vec3i* startPos = &cue->startPos;
+                CsCmdVec3* startPos = &cue->startPos;
 
                 posRot->pos.x = startPos->x;
                 posRot->pos.y = startPos->y;

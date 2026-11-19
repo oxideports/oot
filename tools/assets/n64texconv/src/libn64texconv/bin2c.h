@@ -3,7 +3,11 @@
 #ifndef BIN2C_H
 #define BIN2C_H
 
+#include <stdbool.h>
 #include <stddef.h>
+
+void
+bin2c_set_little_endian(bool little_endian);
 
 int
 bin2c(char **out, size_t *size_out, void *bin, size_t size, size_t pad_to_size, unsigned int byte_width);

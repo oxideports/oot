@@ -26,6 +26,14 @@ ctx.c
 tools/*dSYM/
 graphs/
 
+# devenv / nix (env definition is tracked: devenv.nix, devenv.yaml, devenv.lock)
+/.devenv/
+/.direnv/
+
+# native/reality64 build output (CMake tree + generated host-endian image)
+/build-cmake/
+/build-cmake-*/
+
 # Per-user configuration
 # If you want to use your own gitignore rules without modifying this file:
 # - use `git config core.excludesFile path/to/my_gitignore_file`

@@ -660,6 +660,11 @@ static bool handle_ci_shared_tlut(const char* png_p, const struct fmt_info* fmt,
 }
 
 int main(int argc, char** argv) {
+    if (argc > 1 && strequ(argv[1], "--little-endian")) {
+        bin2c_set_little_endian(true);
+        argv++;
+        argc--;
+    }
     if (argc < 3) {
     usage:
         fprintf(stderr,

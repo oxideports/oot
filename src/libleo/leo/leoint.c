@@ -9,7 +9,7 @@ extern u8 LEOC2_Syndrome[2][0xE8 * 4];
 extern OSIoMesg LEOPiDmaParam;
 extern block_param_form LEOc2_param;
 
-u8 LEOc2ctrl_que_buf[8];
+OSMesg LEOc2ctrl_que_buf[1];
 OSMesgQueue LEOc2ctrl_que;
 
 u32 read_write_track(void);
@@ -21,7 +21,7 @@ void leointerrupt(void* arg) {
     u32 result;
     u32 tg_blocks;
 
-    osCreateMesgQueue(&LEOc2ctrl_que, (OSMesg*)&LEOc2ctrl_que_buf, 1);
+    osCreateMesgQueue(&LEOc2ctrl_que, LEOc2ctrl_que_buf, 1);
 
     while (true) {
         osStopThread(&LEOinterruptThread);

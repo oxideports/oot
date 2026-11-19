@@ -1,6 +1,10 @@
 #include "sys_cfb.h"
 #include "ultra64.h"
 #include "versions.h"
+#ifdef NO_SEGMENTED_MEMORY
+#include <stdlib.h> // host malloc for the native system arena (no KSEG0 RDRAM)
+void R64RegisterGuestMemory(void* start, size_t size);
+#endif
 
 #pragma increment_block_number "gc-eu:128 gc-eu-mq:128 gc-jp:128 gc-jp-ce:128 gc-jp-mq:128 gc-us:128 gc-us-mq:128" \
                                "ique-cn:0 ntsc-1.0:0 ntsc-1.1:0 ntsc-1.2:0 pal-1.0:0 pal-1.1:0"
@@ -100,7 +104,7 @@ void Main(void* arg) {
     gAppNmiBufferPtr = (PreNmiBuff*)osAppNMIBuffer;
     PreNmiBuff_Init(gAppNmiBufferPtr);
     Fault_Init();
-#if PLATFORM_N64
+#if PLATFORM_N64 && !defined(NO_SEGMENTED_MEMORY)
     func_800AD410();
     if (D_80121211 != 0) {
         systemHeapStart = (uintptr_t)_n64ddSegmentEnd;
@@ -111,11 +115,21 @@ void Main(void* arg) {
         SysCfb_Init(0);
     }
 #else
+    // func_800AD410/func_800AD488 clear fixed N64 RDRAM regions that don't exist natively (they SIGBUS);
+    // take the simple path — SysCfb sets the framebuffer pointers, and the host heap is set below.
     SysCfb_Init(0);
     systemHeapStart = (uintptr_t)_buffersSegmentEnd;
 #endif
     fb = (uintptr_t)SysCfb_GetFbPtr(0);
+#ifdef NO_SEGMENTED_MEMORY
+    // _buffersSegmentEnd and the framebuffer are fake native stubs (no KSEG0 RAM gap between them), so
+    // fb - systemHeapStart is nonsense. Back the system arena with a real host allocation instead.
+    gSystemHeapSize = 0x02000000; // 32 MiB — generous during bring-up; host memory is plentiful
+    systemHeapStart = (uintptr_t)malloc(gSystemHeapSize);
+    R64RegisterGuestMemory((void*)systemHeapStart, gSystemHeapSize);
+#else
     gSystemHeapSize = fb - systemHeapStart;
+#endif
     PRINTF(T("システムヒープ初期化 %08x-%08x %08x\n", "System heap initialization %08x-%08x %08x\n"), systemHeapStart,
            fb, gSystemHeapSize);
     Runtime_Init((void*)systemHeapStart, gSystemHeapSize);

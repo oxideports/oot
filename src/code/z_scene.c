@@ -1,4 +1,5 @@
 #include "array_count.h"
+#include "assert.h"
 #include "avoid_ub.h"
 #include "printf.h"
 #include "regs.h"
@@ -93,6 +94,12 @@ void Object_InitContext(PlayState* play, ObjectContext* objectCtx) {
     } else {
         spaceSize = 1000 * 1024 - OBJECT_SPACE_ADJUSTMENT;
     }
+
+#ifdef NO_SEGMENTED_MEMORY
+    // Native objects are up to ~1.5x their N64 size (16-byte Gfx, pointer-width fields) and an
+    // overrun past spaceEnd is unchecked outside debug builds.
+    spaceSize *= 2;
+#endif
 
     objectCtx->numEntries = objectCtx->numPersistentEntries = 0;
     objectCtx->mainKeepSlot = objectCtx->subKeepSlot = 0;
@@ -194,6 +201,13 @@ void* func_800982FC(ObjectContext* objectCtx, s32 slot, s16 objectId) {
 
     return nextPtr;
 }
+
+static_assert(offsetof(SCmdWindSettings, x) == offsetof(SCmdBase, data2), "SCmdWindSettings word slot");
+static_assert(offsetof(SCmdTimeSettings, hour) == offsetof(SCmdBase, data2), "SCmdTimeSettings word slot");
+static_assert(offsetof(SCmdSkyboxSettings, skyboxId) == offsetof(SCmdBase, data2), "SCmdSkyboxSettings word slot");
+static_assert(offsetof(SCmdSkyboxDisables, skyboxDisabled) == offsetof(SCmdBase, data2), "SCmdSkyboxDisables word slot");
+static_assert(offsetof(SCmdSoundSettings, pad2) == offsetof(SCmdBase, data2), "SCmdSoundSettings word slot");
+static_assert(offsetof(SCmdEchoSettings, pad2) == offsetof(SCmdBase, data2), "SCmdEchoSettings word slot");
 
 s32 Scene_ExecuteCommands(PlayState* play, SceneCmd* sceneCmd) {
     while (true) {

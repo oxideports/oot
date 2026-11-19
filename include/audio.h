@@ -27,7 +27,7 @@ typedef void (*AudioCustomUpdateFunction)(void);
 // Also known as "Pulses Per Quarter Note" or "Tatums Per Beat"
 #define SEQTICKS_PER_BEAT 48
 
-#define IS_SEQUENCE_CHANNEL_VALID(ptr) ((u32)(ptr) != (u32)&gAudioCtx.sequenceChannelNone)
+#define IS_SEQUENCE_CHANNEL_VALID(ptr) ((uintptr_t)(ptr) != (uintptr_t)&gAudioCtx.sequenceChannelNone)
 #define SEQ_NUM_CHANNELS 16
 #define SEQ_IO_VAL_NONE -1
 

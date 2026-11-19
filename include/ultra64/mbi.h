@@ -36,8 +36,10 @@
 #include "abi.h"
 
 #define NUM_SEGMENTS        (16)
-#define SEGMENT_OFFSET(a)   ((u32)(a) & 0x00FFFFFF)
-#define SEGMENT_NUMBER(a)   (((u32)(a) << 4) >> 28)
+// (uintptr_t) first so a native 64-bit pointer isn't truncated by the pointer->int cast; the outer
+// (u32) keeps the N64 32-bit address bit-math (offset = low 24 bits, number = bits 24-27).
+#define SEGMENT_OFFSET(a)   ((u32)(uintptr_t)(a) & 0x00FFFFFF)
+#define SEGMENT_NUMBER(a)   (((u32)(uintptr_t)(a) << 4) >> 28)
 #define SEGMENT_ADDR(num, off)  (((num) << 24) + (off))
 
 #endif
